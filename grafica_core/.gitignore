@@ -16,6 +16,9 @@
 /public/build
 /public/hot
 /public/storage
+/build_error.txt
+/tail_upload.txt
+/storage/
 /storage/*.key
 /storage/pail
 /vendor
