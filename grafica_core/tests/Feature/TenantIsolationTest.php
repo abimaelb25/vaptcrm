@@ -8,8 +8,10 @@ use App\Models\Cliente;
 use App\Models\Loja;
 use App\Models\Pedido;
 use App\Models\Usuario;
+use Database\Factories\ClienteFactory;
+use Database\Factories\LojaFactory;
+use Database\Factories\UsuarioFactory;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 /**
@@ -48,29 +50,6 @@ use Tests\TestCase;
 final class TenantIsolationTest extends TestCase
 {
     // ─── Helpers ─────────────────────────────────────────────────────────────
-
-    private function criarLoja(string $tag): Loja
-    {
-        return Loja::create([
-            'nome_fantasia'    => 'Loja ' . $tag,
-            'slug'             => 'loja-' . $tag,
-            'responsavel_nome' => 'Resp ' . $tag,
-            'responsavel_email' => $tag . '@ci.test',
-            'status'           => 'ativa',
-        ]);
-    }
-
-    private function criarUsuario(Loja $loja, string $tag): Usuario
-    {
-        return Usuario::create([
-            'loja_id' => $loja->id,
-            'nome'    => 'User ' . $tag,
-            'email'   => 'user-' . $tag . '@ci.test',
-            'senha'   => Hash::make('secret'),
-            'perfil'  => 'administrador',
-            'ativo'   => true,
-        ]);
-    }
 
     /**
      * Executa $callback simulando contexto HTTP (não-console).
@@ -138,25 +117,13 @@ final class TenantIsolationTest extends TestCase
      */
     public function test_usuario_ve_apenas_clientes_da_propria_loja(): void
     {
-        $tag  = uniqid();
-        $lojaA = $this->criarLoja('a-' . $tag);
-        $lojaB = $this->criarLoja('b-' . $tag);
+        $lojaA = Loja::factory()->create();
+        $lojaB = Loja::factory()->create();
 
-        $userA = $this->criarUsuario($lojaA, 'a-' . $tag);
+        $userA = Usuario::factory()->paraLoja($lojaA)->create();
 
-        // Criar registros explicitamente com loja_id
-        // (o hook 'creating' só auto-preenche quando loja_id está vazio)
-        Cliente::create([
-            'loja_id' => $lojaA->id,
-            'nome'    => 'Cliente da Loja A',
-            'status'  => 'ativo',
-        ]);
-
-        Cliente::create([
-            'loja_id' => $lojaB->id,
-            'nome'    => 'Cliente da Loja B',
-            'status'  => 'ativo',
-        ]);
+        Cliente::factory()->paraLoja($lojaA)->create(['nome' => 'Cliente da Loja A']);
+        Cliente::factory()->paraLoja($lojaB)->create(['nome' => 'Cliente da Loja B']);
 
         $resultado = $this->withHttpContext(function () use ($userA): \Illuminate\Database\Eloquent\Collection {
             Auth::login($userA);
@@ -171,17 +138,8 @@ final class TenantIsolationTest extends TestCase
             ' clientes (esperado: 1). Isolamento multi-tenant QUEBRADO.'
         );
 
-        $this->assertSame(
-            'Cliente da Loja A',
-            $resultado->first()->nome,
-            'O cliente retornado não pertence à Loja A.'
-        );
-
-        $this->assertSame(
-            $lojaA->id,
-            $resultado->first()->loja_id,
-            'loja_id do registro retornado não corresponde à Loja A.'
-        );
+        $this->assertSame('Cliente da Loja A', $resultado->first()->nome);
+        $this->assertSame($lojaA->id, $resultado->first()->loja_id);
     }
 
     /**
@@ -192,17 +150,11 @@ final class TenantIsolationTest extends TestCase
      */
     public function test_busca_por_id_nao_retorna_registro_de_outra_loja(): void
     {
-        $tag  = uniqid();
-        $lojaA = $this->criarLoja('a-' . $tag);
-        $lojaB = $this->criarLoja('b-' . $tag);
+        $lojaA = Loja::factory()->create();
+        $lojaB = Loja::factory()->create();
 
-        $userA = $this->criarUsuario($lojaA, 'a-' . $tag);
-
-        $clienteB = Cliente::create([
-            'loja_id' => $lojaB->id,
-            'nome'    => 'Cliente Exclusivo Loja B',
-            'status'  => 'ativo',
-        ]);
+        $userA    = Usuario::factory()->paraLoja($lojaA)->create();
+        $clienteB = Cliente::factory()->paraLoja($lojaB)->create();
 
         $resultado = $this->withHttpContext(function () use ($userA, $clienteB): ?Cliente {
             Auth::login($userA);
@@ -225,21 +177,22 @@ final class TenantIsolationTest extends TestCase
      */
     public function test_pedidos_sao_isolados_entre_lojas(): void
     {
-        $tag  = uniqid();
-        $lojaA = $this->criarLoja('a-' . $tag);
-        $lojaB = $this->criarLoja('b-' . $tag);
+        $lojaA = Loja::factory()->create();
+        $lojaB = Loja::factory()->create();
 
-        $userA   = $this->criarUsuario($lojaA, 'a-' . $tag);
-        $userB   = $this->criarUsuario($lojaB, 'b-' . $tag);
+        $userA = Usuario::factory()->paraLoja($lojaA)->create();
+        $userB = Usuario::factory()->paraLoja($lojaB)->create();
 
-        $clienteA = Cliente::create(['loja_id' => $lojaA->id, 'nome' => 'CLI-A', 'status' => 'ativo']);
-        $clienteB = Cliente::create(['loja_id' => $lojaB->id, 'nome' => 'CLI-B', 'status' => 'ativo']);
+        $clienteA = Cliente::factory()->paraLoja($lojaA)->create();
+        $clienteB = Cliente::factory()->paraLoja($lojaB)->create();
 
+        // Criação direta via Eloquent — bypassa o scope (running in console)
+        // para podermos inserir dados das duas lojas no setup do teste.
         Pedido::create([
             'loja_id'           => $lojaA->id,
             'cliente_id'        => $clienteA->id,
             'responsavel_id'    => $userA->id,
-            'numero'            => 'PED-A-' . $tag,
+            'numero'            => 'PED-A-' . uniqid(),
             'numero_sequencial' => 1,
             'codigo_pedido'     => 'LA-26-0001',
             'status'            => Pedido::STATUS_AGUARDANDO,
@@ -251,7 +204,7 @@ final class TenantIsolationTest extends TestCase
             'loja_id'           => $lojaB->id,
             'cliente_id'        => $clienteB->id,
             'responsavel_id'    => $userB->id,
-            'numero'            => 'PED-B-' . $tag,
+            'numero'            => 'PED-B-' . uniqid(),
             'numero_sequencial' => 1,
             'codigo_pedido'     => 'LB-26-0001',
             'status'            => Pedido::STATUS_AGUARDANDO,
@@ -272,7 +225,6 @@ final class TenantIsolationTest extends TestCase
             'CRÍTICO: Usuário da Loja A vê ' . $pedidosA->count() .
             ' pedidos (esperado: 1). Pedidos de outra loja estão expostos!'
         );
-
         $this->assertSame($lojaA->id, $pedidosA->first()->loja_id);
 
         // Verificação para userB — mesmo resultado, universo invertido
@@ -288,7 +240,6 @@ final class TenantIsolationTest extends TestCase
             'CRÍTICO: Usuário da Loja B vê ' . $pedidosB->count() .
             ' pedidos (esperado: 1). Isolamento multi-tenant QUEBRADO.'
         );
-
         $this->assertSame($lojaB->id, $pedidosB->first()->loja_id);
     }
 
@@ -304,14 +255,13 @@ final class TenantIsolationTest extends TestCase
      */
     public function test_without_global_scopes_expoe_dados_de_todos_os_tenants(): void
     {
-        $tag  = uniqid();
-        $lojaA = $this->criarLoja('a-' . $tag);
-        $lojaB = $this->criarLoja('b-' . $tag);
+        $lojaA = Loja::factory()->create();
+        $lojaB = Loja::factory()->create();
 
-        $userA = $this->criarUsuario($lojaA, 'a-' . $tag);
+        $userA = Usuario::factory()->paraLoja($lojaA)->create();
 
-        Cliente::create(['loja_id' => $lojaA->id, 'nome' => 'CLI-A', 'status' => 'ativo']);
-        Cliente::create(['loja_id' => $lojaB->id, 'nome' => 'CLI-B', 'status' => 'ativo']);
+        Cliente::factory()->paraLoja($lojaA)->create();
+        Cliente::factory()->paraLoja($lojaB)->create();
 
         $this->withHttpContext(function () use ($userA): void {
             Auth::login($userA);
