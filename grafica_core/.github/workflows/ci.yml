@@ -1,12 +1,18 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# CI pipeline — vaptcrm SaaS multi-tenant
+# CI pipeline — VaptCRM SaaS multi-tenant
 #
-# Estratégia:
-#   4 jobs independentes executados em paralelo para máxima velocidade.
-#   Nenhum job depende de serviços externos (SQLite in-memory, queue=sync).
-#   WhatsApp e Stripe nunca disparam em CI (sem credenciais reais no .env.ci).
+# Arquitetura:
+#   4 jobs paralelos → tempo total estimado < 3 minutos.
+#   Todos os jobs usam .env.ci (commitado, sem segredos).
+#   Nenhum job depende de serviços externos.
 #
-# Required status checks que devem bloquear merge na main:
+# Garantias de segurança:
+#   • WhatsApp NUNCA dispara (WHATSAPP_ENABLED=false + sem credenciais reais)
+#   • Stripe NUNCA processa (placeholders sem prefixo válido)
+#   • Queue=sync: jobs rodam inline, sem worker persistente
+#   • SQLite :memory: — banco efêmero, isolado por runner
+#
+# Required status checks (nomes exatos para branch protection):
 #   • CI / Lint PHP
 #   • CI / Validate Laravel
 #   • CI / Tests
@@ -20,6 +26,12 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened]
+
+# Cancela runs anteriores do mesmo PR para economizar minutos de CI
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -27,8 +39,8 @@ permissions:
 jobs:
   # ──────────────────────────────────────────────────────────────────────────
   # 1. LINT PHP
-  #    Garante estilo de código consistente via Laravel Pint (--test = dry-run,
-  #    não altera ficheiros, apenas devolve exit code != 0 se houver violações).
+  #    Laravel Pint com --test = dry-run.
+  #    Exit code != 0 se houver qualquer violação de estilo → merge bloqueado.
   # ──────────────────────────────────────────────────────────────────────────
   lint:
     name: Lint PHP
@@ -44,6 +56,8 @@ jobs:
           php-version: "8.2"
           tools: composer:v2
           coverage: none
+          # Sem extensões desnecessárias — lint não precisa de DB
+          ini-values: memory_limit=256M
 
       - name: Cache Composer
         uses: actions/cache@v4
@@ -55,13 +69,17 @@ jobs:
       - name: Instalar dependências PHP
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
 
-      - name: Lint com Laravel Pint
+      - name: Lint com Laravel Pint (dry-run)
         run: ./vendor/bin/pint --test
 
   # ──────────────────────────────────────────────────────────────────────────
   # 2. VALIDATE LARAVEL
-  #    Verifica autoload, bootstrap, config e routes sem executar testes.
-  #    Detecta erros de sintaxe em service providers, configs e rotas.
+  #    Verifica que o bootstrap completo não tem erros:
+  #    config, autoload, service providers, routes, e migrations.
+  #
+  #    Por que migrate aqui e não só nos testes?
+  #    Uma migration quebrada pode fazer os testes pularem silenciosamente
+  #    com RefreshDatabase. Esta etapa valida isso explicitamente.
   # ──────────────────────────────────────────────────────────────────────────
   validate:
     name: Validate Laravel
@@ -78,6 +96,7 @@ jobs:
           extensions: pdo_sqlite, sqlite3
           tools: composer:v2
           coverage: none
+          ini-values: memory_limit=256M
 
       - name: Cache Composer
         uses: actions/cache@v4
@@ -89,48 +108,43 @@ jobs:
       - name: Instalar dependências PHP
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
 
-      - name: Criar .env de CI
+      - name: Preparar .env de CI
         run: |
-          cp .env.example .env
-          # Sobrepor valores críticos para CI (sem credenciais reais)
-          echo "APP_ENV=testing" >> .env
-          echo "APP_DEBUG=true" >> .env
-          echo "DB_CONNECTION=sqlite" >> .env
-          echo "DB_DATABASE=:memory:" >> .env
-          echo "QUEUE_CONNECTION=sync" >> .env
-          echo "CACHE_STORE=array" >> .env
-          echo "SESSION_DRIVER=array" >> .env
-          echo "MAIL_MAILER=array" >> .env
-          # Desabilita módulos externos que não devem disparar em CI
-          echo "WHATSAPP_ENABLED=false" >> .env
-          echo "STRIPE_KEY=sk_test_placeholder" >> .env
-          echo "STRIPE_SECRET=sk_test_placeholder" >> .env
+          cp .env.ci .env
+          php artisan key:generate --force
 
-      - name: Gerar APP_KEY
-        run: php artisan key:generate --force
-
-      - name: Validar config (cache + clear)
+      - name: Validar config (cache detecta erros de sintaxe nos providers)
         run: |
-          php artisan config:clear
           php artisan config:cache
           php artisan config:clear
 
-      - name: Validar bootstrap e autoload (artisan about)
+      - name: Validar autoload e bootstrap (artisan about)
         run: php artisan about --only=environment
 
       - name: Validar rotas carregam sem erro
         run: php artisan route:list --compact > /dev/null
 
+      - name: Validar migrations executam sem erro
+        # Cria ficheiro SQLite temporário (não :memory: pois artisan migrate
+        # não aceita :memory: via linha de comando, somente via phpunit.xml)
+        run: |
+          touch /tmp/ci_validate.sqlite
+          DB_DATABASE=/tmp/ci_validate.sqlite php artisan migrate --force
+          rm -f /tmp/ci_validate.sqlite
+
   # ──────────────────────────────────────────────────────────────────────────
   # 3. TESTS
-  #    Executa toda a suite de testes.
-  #    phpunit.xml já define: SQLite :memory:, queue=sync, mail=array.
-  #    → Nenhum serviço externo. Nenhuma mensagem WhatsApp real pode disparar.
+  #    Suite completa. phpunit.xml já define SQLite :memory:.
+  #    Inclui TenantIsolationTest que é BLOQUEADOR de merge.
   #
-  #    ATENÇÃO OPERACIONAL:
-  #    Se um teste instanciar código que chama a WhatsApp API sem mock,
-  #    o job irá FALHAR (sem credenciais CI) — que é o comportamento CORRETO.
-  #    Isso protege contra regressões no isolamento do módulo WhatsApp.
+  #    Proteções ativas:
+  #    • WHATSAPP_ENABLED=false — nenhuma mensagem real pode sair
+  #    • QUEUE_CONNECTION=sync  — jobs rodam inline, sem efeitos assíncronos
+  #    • MAIL_MAILER=array      — emails são swallowed
+  #    • Sem credenciais Stripe — qualquer chamada real falha (correto)
+  #
+  #    Se um teste chamar a API WhatsApp sem mock → falha por ausência
+  #    de credenciais → CORRETO. Protege contra regressão no módulo.
   # ──────────────────────────────────────────────────────────────────────────
   tests:
     name: Tests
@@ -147,6 +161,7 @@ jobs:
           extensions: pdo_sqlite, sqlite3
           tools: composer:v2
           coverage: none
+          ini-values: memory_limit=512M
 
       - name: Cache Composer
         uses: actions/cache@v4
@@ -158,30 +173,22 @@ jobs:
       - name: Instalar dependências PHP
         run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
 
-      - name: Criar .env de CI
+      - name: Preparar .env de CI
         run: |
-          cp .env.example .env
-          echo "APP_ENV=testing" >> .env
-          echo "DB_CONNECTION=sqlite" >> .env
-          echo "DB_DATABASE=:memory:" >> .env
-          echo "QUEUE_CONNECTION=sync" >> .env
-          echo "CACHE_STORE=array" >> .env
-          echo "SESSION_DRIVER=array" >> .env
-          echo "MAIL_MAILER=array" >> .env
-          echo "WHATSAPP_ENABLED=false" >> .env
-          echo "STRIPE_KEY=sk_test_placeholder" >> .env
-          echo "STRIPE_SECRET=sk_test_placeholder" >> .env
+          cp .env.ci .env
+          php artisan key:generate --force
 
-      - name: Gerar APP_KEY
-        run: php artisan key:generate --force
+      # Limpa cache de config para garantir que phpunit.xml prevalece
+      - name: Limpar cache de configuração
+        run: php artisan config:clear
 
       - name: Executar testes
         run: php artisan test --stop-on-failure
 
   # ──────────────────────────────────────────────────────────────────────────
   # 4. BUILD FRONTEND
-  #    Garante que Vite + Tailwind compilam sem erros.
-  #    Usando `npm ci` (determinístico, baseado em package-lock.json).
+  #    Vite + Tailwind + Stripe.js devem compilar sem erros.
+  #    npm ci é determinístico (usa package-lock.json) — sem surpresas.
   # ──────────────────────────────────────────────────────────────────────────
   build:
     name: Build Frontend
