@@ -1,0 +1,204 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CI pipeline — vaptcrm SaaS multi-tenant
+#
+# Estratégia:
+#   4 jobs independentes executados em paralelo para máxima velocidade.
+#   Nenhum job depende de serviços externos (SQLite in-memory, queue=sync).
+#   WhatsApp e Stripe nunca disparam em CI (sem credenciais reais no .env.ci).
+#
+# Required status checks que devem bloquear merge na main:
+#   • CI / Lint PHP
+#   • CI / Validate Laravel
+#   • CI / Tests
+#   • CI / Build Frontend
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  # 1. LINT PHP
+  #    Garante estilo de código consistente via Laravel Pint (--test = dry-run,
+  #    não altera ficheiros, apenas devolve exit code != 0 se houver violações).
+  # ──────────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint PHP
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Instalar dependências PHP
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
+
+      - name: Lint com Laravel Pint
+        run: ./vendor/bin/pint --test
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 2. VALIDATE LARAVEL
+  #    Verifica autoload, bootstrap, config e routes sem executar testes.
+  #    Detecta erros de sintaxe em service providers, configs e rotas.
+  # ──────────────────────────────────────────────────────────────────────────
+  validate:
+    name: Validate Laravel
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: pdo_sqlite, sqlite3
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Instalar dependências PHP
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
+
+      - name: Criar .env de CI
+        run: |
+          cp .env.example .env
+          # Sobrepor valores críticos para CI (sem credenciais reais)
+          echo "APP_ENV=testing" >> .env
+          echo "APP_DEBUG=true" >> .env
+          echo "DB_CONNECTION=sqlite" >> .env
+          echo "DB_DATABASE=:memory:" >> .env
+          echo "QUEUE_CONNECTION=sync" >> .env
+          echo "CACHE_STORE=array" >> .env
+          echo "SESSION_DRIVER=array" >> .env
+          echo "MAIL_MAILER=array" >> .env
+          # Desabilita módulos externos que não devem disparar em CI
+          echo "WHATSAPP_ENABLED=false" >> .env
+          echo "STRIPE_KEY=sk_test_placeholder" >> .env
+          echo "STRIPE_SECRET=sk_test_placeholder" >> .env
+
+      - name: Gerar APP_KEY
+        run: php artisan key:generate --force
+
+      - name: Validar config (cache + clear)
+        run: |
+          php artisan config:clear
+          php artisan config:cache
+          php artisan config:clear
+
+      - name: Validar bootstrap e autoload (artisan about)
+        run: php artisan about --only=environment
+
+      - name: Validar rotas carregam sem erro
+        run: php artisan route:list --compact > /dev/null
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 3. TESTS
+  #    Executa toda a suite de testes.
+  #    phpunit.xml já define: SQLite :memory:, queue=sync, mail=array.
+  #    → Nenhum serviço externo. Nenhuma mensagem WhatsApp real pode disparar.
+  #
+  #    ATENÇÃO OPERACIONAL:
+  #    Se um teste instanciar código que chama a WhatsApp API sem mock,
+  #    o job irá FALHAR (sem credenciais CI) — que é o comportamento CORRETO.
+  #    Isso protege contra regressões no isolamento do módulo WhatsApp.
+  # ──────────────────────────────────────────────────────────────────────────
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: pdo_sqlite, sqlite3
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Instalar dependências PHP
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
+
+      - name: Criar .env de CI
+        run: |
+          cp .env.example .env
+          echo "APP_ENV=testing" >> .env
+          echo "DB_CONNECTION=sqlite" >> .env
+          echo "DB_DATABASE=:memory:" >> .env
+          echo "QUEUE_CONNECTION=sync" >> .env
+          echo "CACHE_STORE=array" >> .env
+          echo "SESSION_DRIVER=array" >> .env
+          echo "MAIL_MAILER=array" >> .env
+          echo "WHATSAPP_ENABLED=false" >> .env
+          echo "STRIPE_KEY=sk_test_placeholder" >> .env
+          echo "STRIPE_SECRET=sk_test_placeholder" >> .env
+
+      - name: Gerar APP_KEY
+        run: php artisan key:generate --force
+
+      - name: Executar testes
+        run: php artisan test --stop-on-failure
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 4. BUILD FRONTEND
+  #    Garante que Vite + Tailwind compilam sem erros.
+  #    Usando `npm ci` (determinístico, baseado em package-lock.json).
+  # ──────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Instalar dependências Node
+        run: npm ci
+
+      - name: Build Vite
+        run: npm run build
