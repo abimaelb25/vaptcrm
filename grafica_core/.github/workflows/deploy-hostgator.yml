@@ -1,0 +1,89 @@
+name: Deploy HostGator
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy"
+        required: true
+        default: "main"
+      deploy_path:
+        description: "Absolute path on server"
+        required: true
+        default: "/home2/abimaelb/app.graficavaptvupt.com.br"
+      run_migrations:
+        description: "Run php artisan migrate --force"
+        required: true
+        type: boolean
+        default: true
+      run_npm_build:
+        description: "Build frontend on server"
+        required: true
+        type: choice
+        options:
+          - auto
+          - yes
+          - no
+        default: auto
+      maintenance_mode:
+        description: "Use php artisan down/up during deploy"
+        required: true
+        type: boolean
+        default: true
+
+concurrency:
+  group: deploy-hostgator-${{ inputs.deploy_path }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to HostGator
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        env:
+          SSH_HOST: ${{ secrets.HOSTGATOR_SSH_HOST }}
+          SSH_PORT: ${{ secrets.HOSTGATOR_SSH_PORT }}
+          SSH_USER: ${{ secrets.HOSTGATOR_SSH_USER }}
+          SSH_KEY: ${{ secrets.HOSTGATOR_SSH_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SSH_HOST:-}" ] || [ -z "${SSH_USER:-}" ] || [ -z "${SSH_KEY:-}" ]; then
+            echo "Missing required secrets: HOSTGATOR_SSH_HOST, HOSTGATOR_SSH_USER, HOSTGATOR_SSH_KEY"
+            exit 1
+          fi
+
+          PORT="${SSH_PORT:-22}"
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "$PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Execute remote deploy
+        env:
+          SSH_HOST: ${{ secrets.HOSTGATOR_SSH_HOST }}
+          SSH_PORT: ${{ secrets.HOSTGATOR_SSH_PORT }}
+          SSH_USER: ${{ secrets.HOSTGATOR_SSH_USER }}
+          BRANCH: ${{ inputs.branch }}
+          DEPLOY_PATH: ${{ inputs.deploy_path }}
+          RUN_MIGRATIONS: ${{ inputs.run_migrations && '1' || '0' }}
+          RUN_NPM_BUILD: ${{ inputs.run_npm_build }}
+          MAINTENANCE_MODE: ${{ inputs.maintenance_mode && '1' || '0' }}
+        run: |
+          set -euo pipefail
+          PORT="${SSH_PORT:-22}"
+
+          ssh -p "$PORT" -o StrictHostKeyChecking=yes "${SSH_USER}@${SSH_HOST}" \
+            "DEPLOY_PATH='${DEPLOY_PATH}' BRANCH='${BRANCH}' RUN_MIGRATIONS='${RUN_MIGRATIONS}' RUN_NPM_BUILD='${RUN_NPM_BUILD}' MAINTENANCE_MODE='${MAINTENANCE_MODE}' bash -s" \
+            < scripts/deploy_hostgator.sh
