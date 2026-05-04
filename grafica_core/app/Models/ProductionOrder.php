@@ -7,7 +7,7 @@ namespace App\Models;
 /*
 | Autoria: Abimael Borges
 | Site: https://abimaelborges.adv.br
-| Data: 2026-04-15 18:30
+| Data: 2026-04-20 03:30 (Modificado)
 */
 
 use Illuminate\Database\Eloquent\Model;
@@ -23,18 +23,31 @@ class ProductionOrder extends Model
     protected $fillable = [
         'loja_id',
         'pedido_id',
+        'item_pedido_id',
+        'produto_id',
+        'cliente_nome',
+        'produto_nome',
+        'quantidade',
+        'valor_total',
         'status',
+        'status_atual',
+        'production_step_id',
         'prioridade',
         'data_inicio',
         'data_previsao',
+        'data_finalizacao',
         'data_conclusao',
         'responsavel_id',
         'observacao',
+        'observacoes',
     ];
 
     protected $casts = [
+        'quantidade' => 'integer',
+        'valor_total' => 'float',
         'data_inicio' => 'datetime',
         'data_previsao' => 'datetime',
+        'data_finalizacao' => 'datetime',
         'data_conclusao' => 'datetime',
     ];
 
@@ -48,9 +61,31 @@ class ProductionOrder extends Model
         return $this->belongsTo(Usuario::class, 'responsavel_id');
     }
 
+    public function produto(): BelongsTo
+    {
+        return $this->belongsTo(Produto::class);
+    }
+
+    public function itemPedido(): BelongsTo
+    {
+        return $this->belongsTo(ItemPedido::class, 'item_pedido_id');
+    }
+
+    public function currentStep(): BelongsTo
+    {
+        return $this->belongsTo(ProductionStep::class, 'production_step_id')
+            ->withDefault(['nome' => 'Sem etapa']);
+    }
+
     public function stages(): HasMany
     {
         return $this->hasMany(ProductionOrderStep::class);
+    }
+
+    public function histories(): HasMany
+    {
+        return $this->hasMany(ProductionOrderHistory::class)
+            ->orderByDesc('data_movimentacao');
     }
 
     /**

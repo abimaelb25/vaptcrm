@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Cliente;
 use App\Models\Loja;
 use App\Models\Pedido;
 use App\Models\ProductionOrder;
@@ -15,6 +16,8 @@ use App\Services\Domain\ProductionService;
 use App\Services\WhatsApp\WhatsAppAccountService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 /**
@@ -57,6 +60,19 @@ use Tests\TestCase;
  */
 final class ServiceTenancySecurityTest extends TestCase
 {
+    private function criarUsuarioParaLoja(Loja $loja): Usuario
+    {
+        return Usuario::query()->create([
+            'loja_id' => $loja->id,
+            'nome' => 'Usuario Teste ' . uniqid(),
+            'email' => 'usuario+' . uniqid() . '@teste.local',
+            'senha' => Hash::make('secret123'),
+            'perfil' => 'administrador',
+            'ativo' => true,
+            'permissoes' => [],
+        ]);
+    }
+
     // ─── A) ProductionService — proteção por exceção explícita ───────────────
 
     /**
@@ -127,22 +143,29 @@ final class ServiceTenancySecurityTest extends TestCase
         /** @var OrderService $service */
         $service = app(OrderService::class);
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Contexto de loja não identificado');
-
-        $service->create([
-            'cliente_id'    => 1,
-            'status'        => Pedido::STATUS_AGUARDANDO,
-            'items'         => [
-                [
-                    'produto_id'    => 1,
-                    'description'   => 'Item Teste',
-                    'quantity'      => 1,
-                    'unitary_value' => 100.00,
+        try {
+            $service->create([
+                'cliente_id'    => 1,
+                'status'        => Pedido::STATUS_AGUARDANDO,
+                'items'         => [
+                    [
+                        'produto_id'    => 1,
+                        'description'   => 'Item Teste',
+                        'quantity'      => 1,
+                        'unitary_value' => 100.00,
+                    ],
                 ],
-            ],
-            'delivery_type' => 'retirada',
-        ], userId: 1);
+                'delivery_type' => 'retirada',
+            ], userId: 1);
+
+            $this->fail('Era esperada RuntimeException quando não há contexto de tenant.');
+        } catch (\RuntimeException $e) {
+            $this->assertTrue(
+                str_contains($e->getMessage(), 'Contexto de loja não identificado')
+                || str_contains($e->getMessage(), 'Tenant nao resolvido para validar plano'),
+                'Mensagem inesperada para ausência de tenant: ' . $e->getMessage()
+            );
+        }
     }
 
     // ─── C) ProductionService — proteção por isolamento de query ─────────────
@@ -165,7 +188,7 @@ final class ServiceTenancySecurityTest extends TestCase
         $lojaA = Loja::factory()->create();
         $lojaB = Loja::factory()->create();
 
-        $userA = Usuario::factory()->paraLoja($lojaA)->create();
+        $userA = $this->criarUsuarioParaLoja($lojaA);
 
         // Setup de fluxo mínimo para Loja A
         $phase = ProductionPhase::create([
@@ -191,10 +214,31 @@ final class ServiceTenancySecurityTest extends TestCase
             'ativo'                => true,
         ]);
 
+        $cliente = Cliente::query()->create([
+            'loja_id' => $lojaA->id,
+            'nome' => 'Cliente Produção A',
+            'email' => 'cliente+' . uniqid() . '@teste.local',
+            'status' => 'ativo',
+        ]);
+
+        $pedidoId = (int) DB::table('pedidos')->insertGetId([
+            'loja_id' => $lojaA->id,
+            'cliente_id' => $cliente->id,
+            'responsavel_id' => $userA->id,
+            'numero' => 'PED-' . uniqid(),
+            'numero_sequencial' => 1,
+            'codigo_pedido' => 'LA-26-9999',
+            'status' => Pedido::STATUS_EM_PRODUCAO,
+            'subtotal' => 100,
+            'total' => 100,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         // Criar OP na Loja A diretamente (bypassa service para setup)
         $opLojaA = ProductionOrder::create([
             'loja_id'             => $lojaA->id,
-            'pedido_id'           => 1,
+            'pedido_id'           => $pedidoId,
             'production_step_id'  => $step1->id,
             'cliente_nome'        => 'Cliente Loja A',
             'produto_nome'        => 'Banner',

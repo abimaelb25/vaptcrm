@@ -15,8 +15,8 @@ return [
 
     'name' => env('APP_NAME', 'CRM Grafica'),
 
-    // Autoria: Abimael Borges | https://abimaelborges.adv.br | 2026-04-11 02:00
-    'version' => '1.5.0',
+    // Autoria: Abimael Borges | https://abimaelborges.adv.br | 2026-04-28 11:30
+    'version' => '1.5.3',
 
     /*
     |--------------------------------------------------------------------------
@@ -56,6 +56,19 @@ return [
     */
 
     'url' => env('APP_URL', 'http://localhost'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | SaaS Base Domain
+    |--------------------------------------------------------------------------
+    |
+    | O domínio base para subdomínios de lojas no modo SaaS.
+    | Ex: se definido como 'vaptcrm.com.br', lojas terão URLs como
+    | 'grafica.vaptcrm.com.br', 'impressao.vaptcrm.com.br', etc.
+    |
+    */
+
+    'saas_base_domain' => env('SAAS_BASE_DOMAIN', 'vaptcrm.com.br'),
 
     /*
     |--------------------------------------------------------------------------

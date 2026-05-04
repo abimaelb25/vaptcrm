@@ -4,6 +4,16 @@
         <p class="text-slate-500 font-medium">Controle seu plano, faturamento e limites de uso do sistema.</p>
     </div>
 
+    @if(!empty($alerts))
+        <div class="mb-6 space-y-2">
+            @foreach($alerts as $alert)
+                <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 font-semibold">
+                    {{ $alert }}
+                </div>
+            @endforeach
+        </div>
+    @endif
+
     <!-- Status Atual -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
         <div class="lg:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm p-8 flex flex-col md:flex-row justify-between items-center gap-6">
@@ -51,18 +61,18 @@
     <!-- Limites de Uso -->
     <div class="mb-12">
         <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-100 pb-2">Utilização de Recursos</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             
             <!-- Produtos -->
             <div class="bg-white p-6 rounded-2xl border border-slate-200">
                 <div class="flex justify-between items-end mb-4">
                     <div>
                         <span class="text-xs font-black text-slate-400 uppercase">Catálogo de Produtos</span>
-                        <h4 class="text-2xl font-black text-slate-800">{{ $uso['produtos']['atual'] }} <span class="text-slate-300 font-bold text-lg">/ {{ $uso['produtos']['limite'] ?? '∞' }}</span></h4>
+                        <h4 class="text-2xl font-black text-slate-800">{{ $usage['produtos']['usage'] }} <span class="text-slate-300 font-bold text-lg">/ {{ $usage['produtos']['limit'] ?? '∞' }}</span></h4>
                     </div>
                 </div>
                 <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-brand-primary transition-all duration-1000" style="width: {{ $uso['produtos']['porcentagem'] }}%"></div>
+                    <div class="h-full bg-brand-primary transition-all duration-1000" style="width: {{ $usage['produtos']['percent'] }}%"></div>
                 </div>
             </div>
 
@@ -71,16 +81,54 @@
                 <div class="flex justify-between items-end mb-4">
                     <div>
                         <span class="text-xs font-black text-slate-400 uppercase">Equipe Operacional</span>
-                        <h4 class="text-2xl font-black text-slate-800">{{ $uso['funcionarios']['atual'] }} <span class="text-slate-300 font-bold text-lg">/ {{ $uso['funcionarios']['limite'] ?? '∞' }}</span></h4>
+                        <h4 class="text-2xl font-black text-slate-800">{{ $usage['funcionarios']['usage'] }} <span class="text-slate-300 font-bold text-lg">/ {{ $usage['funcionarios']['limit'] ?? '∞' }}</span></h4>
                     </div>
                 </div>
                 <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-blue-500 transition-all duration-1000" style="width: {{ $uso['funcionarios']['porcentagem'] }}%"></div>
+                    <div class="h-full bg-blue-500 transition-all duration-1000" style="width: {{ $usage['funcionarios']['percent'] }}%"></div>
+                </div>
+            </div>
+
+            <!-- Pedidos no ciclo -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200">
+                <div class="flex justify-between items-end mb-4">
+                    <div>
+                        <span class="text-xs font-black text-slate-400 uppercase">Pedidos no Ciclo</span>
+                        <h4 class="text-2xl font-black text-slate-800">{{ $usage['pedidos_mes']['usage'] }} <span class="text-slate-300 font-bold text-lg">/ {{ $usage['pedidos_mes']['limit'] ?? '∞' }}</span></h4>
+                    </div>
+                </div>
+                <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-emerald-500 transition-all duration-1000" style="width: {{ $usage['pedidos_mes']['percent'] }}%"></div>
+                </div>
+            </div>
+
+            <!-- Storage -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200">
+                <div class="flex justify-between items-end mb-4">
+                    <div>
+                        <span class="text-xs font-black text-slate-400 uppercase">Armazenamento</span>
+                        <h4 class="text-2xl font-black text-slate-800">{{ $usage['storage_mb']['usage'] }}MB <span class="text-slate-300 font-bold text-lg">/ {{ $usage['storage_mb']['limit'] ?? '∞' }}MB</span></h4>
+                    </div>
+                </div>
+                <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full {{ ($usage['storage_policy']['level'] ?? 'normal') === 'critical' || ($usage['storage_policy']['level'] ?? 'normal') === 'blocked' ? 'bg-rose-500' : 'bg-amber-500' }} transition-all duration-1000" style="width: {{ $usage['storage_mb']['percent'] }}%"></div>
                 </div>
             </div>
             
         </div>
     </div>
+
+    @if($upgradeRecommended)
+        <div class="mb-10 bg-gradient-to-r from-brand-secondary to-slate-900 text-white rounded-3xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h3 class="text-xl font-black">Seu uso indica potencial de upgrade</h3>
+                <p class="text-white/80 font-medium">Evite bloqueios e continue escalando com um plano superior.</p>
+            </div>
+            <a href="{{ route('admin.billing.index') }}" class="px-6 py-3 bg-white text-slate-900 rounded-xl font-black hover:bg-slate-100 transition-colors">
+                Ver opções de upgrade
+            </a>
+        </div>
+    @endif
 
     <!-- Comparação de Planos -->
     <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-100 pb-2">Planos Disponíveis</h3>

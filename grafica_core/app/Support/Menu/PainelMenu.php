@@ -55,6 +55,12 @@ class PainelMenu
                     'active_pattern' => 'admin.sales.clientes.*',
                 ],
                 [
+                    'label' => 'WhatsApp',
+                    'route' => 'admin.whatsapp.index',
+                    'icon' => 'chat-bubble-left-right',
+                    'active_pattern' => 'admin.whatsapp.*',
+                ],
+                [
                     'label' => 'Produtos',
                     'route' => 'admin.catalog.produtos.index',
                     'icon' => 'cube',
@@ -112,6 +118,12 @@ class PainelMenu
                     'route' => 'admin.inventory.fornecedores.index',
                     'icon' => 'truck',
                     'active_pattern' => 'admin.inventory.fornecedores.*',
+                ],
+                [
+                    'label' => 'Importar NF-e XML',
+                    'route' => 'admin.inventory.nfe-importacao.index',
+                    'icon' => 'document-arrow-up',
+                    'active_pattern' => 'admin.inventory.nfe-importacao.*',
                 ],
                 [
                     'label' => 'Alertas',
@@ -190,7 +202,11 @@ class PainelMenu
                     'label' => 'Funcionários',
                     'route' => 'admin.system.equipe.index',
                     'icon' => 'user-group',
-                    'active_pattern' => 'admin.system.equipe.*',
+                    'active_routes' => [
+                        'admin.system.equipe.index',
+                        'admin.system.equipe.create',
+                        'admin.system.equipe.edit',
+                    ],
                 ],
             ]),
         ];
@@ -262,9 +278,15 @@ class PainelMenu
             'items' => array_filter([
                 [
                     'label' => 'Meu Perfil',
-                    'url' => route('admin.system.equipe.show', $user->id),
+                    'url' => route('admin.system.equipe.show', [
+                        'equipe' => $user->funcionario->id ?? $user->id,
+                        'loja' => $user->loja->slug ?? null
+                    ]),
                     'icon' => 'user-circle',
-                    'active_pattern' => 'admin.system.equipe.show',
+                    'active_routes' => ['admin.system.equipe.show'],
+                    'active_params' => [
+                        'equipe' => $user->funcionario->id ?? $user->id,
+                    ],
                 ],
                 [
                     'label' => 'Minha Assinatura',
@@ -275,7 +297,7 @@ class PainelMenu
                 ],
                 [
                     'label' => 'Ver catálogo',
-                    'url' => route('site.catalogo'),
+                    'url' => \App\Support\PublicUrlHelper::catalogo(),
                     'icon' => 'arrow-top-right-on-square',
                     'external' => true,
                 ],

@@ -1,0 +1,19 @@
+$loja = \App\Models\Loja::find(2);
+if ($loja) {
+    $novaData = now()->addDays(15);
+    $loja->trial_ends_at = $novaData;
+    $loja->save();
+    
+    $assinatura = $loja->assinaturaAtiva();
+    if ($assinatura) {
+        $assinatura->update([
+            'status' => 'trial',
+            'trial_ends_at' => $novaData,
+        ]);
+    }
+    
+    app(\App\Services\SaaS\SaaSService::class)->limparCachePorLojaId(2);
+    echo "Sucesso: Loja 2 atualizada para 15 dias de trial e cache limpo.\n";
+} else {
+    echo "Erro: Loja 2 nao encontrada.\n";
+}

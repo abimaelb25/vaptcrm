@@ -63,7 +63,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('superadmin.support.central-de-ajuda.index') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 transition-colors {{ request()->routeIs('superadmin.support.central-de-ajuda.*') ? 'bg-slate-800 border-l-4 border-indigo-500' : 'border-l-4 border-transparent' }}">
+                        <a href="{{ route('superadmin.support.academy-trilhas.index') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 transition-colors {{ request()->routeIs('superadmin.support.academy-trilhas.*') || request()->routeIs('superadmin.support.academy-cursos.*') || request()->routeIs('superadmin.support.central-de-ajuda.*') ? 'bg-slate-800 border-l-4 border-indigo-500' : 'border-l-4 border-transparent' }}">
                             <i class="fas fa-video w-6"></i>
                             <span class="ml-2 font-medium">VaptAcademy</span>
                         </a>

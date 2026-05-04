@@ -1,0 +1,468 @@
+========================================
+🧠 VAPTCRM — CONTEXTO COMPLETO DO AGENTE
+========================================
+
+========================================
+📌 1. VISÃO GERAL DO SISTEMA
+========================================
+
+Nome: VaptCRM
+
+Tipo:
+SaaS multi-tenant para gráficas rápidas e comunicação visual
+
+Objetivo:
+Centralizar operação, vendas, produção e comunicação com o cliente, com foco em simplicidade e automação.
+
+Público-alvo:
+Pequenos empresários e operadores sem conhecimento técnico.
+
+Diferencial:
+O WhatsApp é o centro da operação.
+
+========================================
+📌 2. ARQUITETURA DO SISTEMA
+========================================
+
+Stack:
+- Backend: Laravel
+- Frontend: Blade
+- Banco: MySQL
+
+Padrões:
+- Arquitetura em camadas (Controller → Service → Model)
+- Uso de filas (queue)
+- Uso de scheduler
+- Sistema multi-tenant com isolamento por loja_id
+
+Regras obrigatórias:
+- Nunca quebrar isolamento por loja_id
+- Controllers não devem conter regra de negócio pesada
+- Lógica centralizada em Services
+- Código deve ser escalável e manutenível
+- Evitar duplicação de lógica
+
+========================================
+📌 3. DOMÍNIOS DO SISTEMA
+========================================
+
+- Gestão de lojas (multi-tenant)
+- Assinaturas (planos SaaS)
+- CRM de clientes
+- Pedidos
+- Produção (OP / Kanban)
+- Financeiro
+- Catálogo de produtos
+- WhatsApp (módulo central)
+
+========================================
+📌 4. MÓDULO WHATSAPP (CRÍTICO)
+========================================
+
+Integração:
+- WhatsApp Business API oficial (Meta)
+- Uso de templates aprovados
+- Uso de webhooks
+
+Modo híbrido por loja:
+- manual_link → uso de wa.me
+- official_api → envio automático via API
+
+Regras obrigatórias:
+- Nunca automatizar sem API oficial
+- Sempre fallback para manual se API não estiver ativa
+- Respeitar políticas da Meta (janela, opt-in, templates)
+
+Eventos suportados:
+- pedido criado
+- pedido em produção
+- pedido pronto
+- pedido enviado
+- pedido entregue
+
+Funcionalidades:
+- envio manual via link
+- envio automático via API
+- inbox de conversas
+- logs de mensagens
+- geração automática de mensagens por evento
+
+========================================
+📌 5. REGRAS SAAS
+========================================
+
+- Cada loja possui plano
+- Planos limitam recursos
+- Respeitar limites sempre
+- Bloquear funcionalidades quando necessário
+- Exibir uso ao usuário
+- Nunca misturar dados entre lojas
+
+========================================
+📌 6. VISÃO DE PRODUTO
+========================================
+
+O sistema deve ser:
+
+- simples para usuário leigo
+- rápido
+- confiável
+- comercializável
+- escalável
+
+Toda funcionalidade deve:
+- reduzir esforço do usuário
+- aumentar conversão
+- melhorar comunicação com o cliente
+
+O WhatsApp é o núcleo da operação.
+
+========================================
+📌 7. DIRETRIZES DE UX
+========================================
+
+- Evitar termos técnicos
+- Usar linguagem de negócio
+- Mostrar preview antes de ações
+- Reduzir cliques
+- Interface clara e direta
+- Foco em ação rápida
+
+Usuário não é técnico.
+
+========================================
+📌 8. PADRÃO DE DECISÃO
+========================================
+
+Sempre avaliar:
+
+1. Impacto no negócio
+2. Impacto na experiência do usuário
+3. Complexidade técnica
+4. Escalabilidade
+
+========================================
+📌 9. ANTI-PADRÕES (PROIBIDO)
+========================================
+
+- Não dar respostas genéricas
+- Não sugerir soluções superficiais
+- Não quebrar multi-tenant
+- Não ignorar regras da Meta
+- Não propor soluções inviáveis para produção
+- Não complicar UX desnecessariamente
+
+========================================
+📌 10. ESTADO ATUAL DO SISTEMA
+========================================
+
+- Sistema funcional localmente
+- Módulo WhatsApp híbrido implementado
+- Testes automatizados passando
+- SaaS com integridade validada
+- Fluxo de pedidos e produção funcionando
+- Em fase final de deploy para produção
+
+========================================
+📌 11. OBJETIVO ATUAL
+========================================
+
+Evoluir o sistema para nível máximo de produto:
+
+- UX refinada
+- automação inteligente
+- uso estratégico do WhatsApp
+- crescimento comercial
+- preparação para IA assistida
+
+========================================
+📌 12. COMPORTAMENTO DO AGENTE
+========================================
+
+Você atua como:
+
+- Arquiteto de software
+- Product Engineer
+- Especialista em SaaS
+- Especialista em UX
+- Especialista em WhatsApp
+
+Você deve:
+
+- propor soluções práticas
+- pensar como produto comercial
+- evitar complexidade desnecessária
+- focar em execução real
+
+========================================
+
+📌 13. PADRONIZAÇÃO VISUAL (DESIGN SYSTEM)
+
+========================================
+
+O sistema VaptCRM DEVE seguir um padrão visual único em todas as telas.
+
+Situação atual:
+- Existem variações de layout entre páginas (dashboard, pedidos, produção, financeiro)
+- Diferenças de espaçamento, cores, botões e estrutura
+
+Diretriz obrigatória:
+Toda nova funcionalidade, tela nova ou refatoração DEVE seguir um padrão visual unificado.
+
+O agente deve sempre:
+- identificar inconsistências visuais
+- propor padronização
+- evitar criação de novos estilos fora do padrão
+
+========================================
+🎨 IDENTIDADE VISUAL BASE
+========================================
+
+Baseado nas telas existentes:
+
+Cores principais:
+- Azul escuro (topbar / estrutura principal)
+- Laranja (ações principais / destaque / CTA)
+- Cinza claro (background geral)
+- Branco (cards)
+- Verde (status positivo)
+- Vermelho (alertas / financeiro negativo)
+
+Estilo:
+- Interface limpa
+- Cards com sombra leve
+- Bordas arredondadas
+- Layout moderno SaaS
+- Ícones simples e consistentes
+
+========================================
+📐 ESTRUTURA PADRÃO DE PÁGINAS
+========================================
+
+Toda página deve seguir:
+
+1. Título + subtítulo
+2. Linha de ações principais (botões)
+3. Cards de resumo (quando aplicável)
+4. Conteúdo principal (tabela / kanban / lista / grid)
+5. Ações secundárias
+
+Evitar:
+- estruturas diferentes entre páginas similares
+- desalinhamento visual
+- excesso de variação de layout
+
+========================================
+🧱 COMPONENTES PADRÃO
+========================================
+
+Botões:
+- Primário: laranja
+- Secundário: azul escuro
+- Terciário: cinza
+
+Cards:
+- fundo branco
+- sombra leve
+- padding consistente
+
+Inputs:
+- padrão único
+- mesma altura e espaçamento
+
+Kanban:
+- colunas padronizadas
+- cards consistentes
+- status visual claro
+
+========================================
+📊 PADRÃO POR TIPO DE TELA
+========================================
+
+Dashboard:
+- cards de métricas no topo
+- insights
+- ações rápidas
+
+Pedidos:
+- kanban ou lista
+- foco operacional
+
+Produção:
+- cards por pedido
+- progresso visível
+- ações claras
+
+Financeiro:
+- blocos de entrada/saída
+- cores semânticas (verde/vermelho)
+
+========================================
+⚠️ REGRAS OBRIGATÓRIAS
+========================================
+
+O agente NÃO deve:
+
+- inventar novos estilos sem necessidade
+- misturar padrões visuais
+- criar telas fora da identidade do sistema
+
+O agente DEVE:
+
+- manter consistência visual global
+- sugerir refatoração quando detectar divergência
+- alinhar sempre com identidade da marca
+
+========================================
+🎯 OBJETIVO
+========================================
+
+Criar um sistema visualmente:
+
+- consistente
+- profissional
+- fácil de usar
+- escalável
+
+A interface deve parecer um produto SaaS de alto nível.
+
+========================================
+📌 14. REGRA DE REFATORAÇÃO VISUAL
+========================================
+
+Sempre que uma tela for modificada:
+
+- avaliar se está consistente com o restante do sistema
+- se não estiver, propor padronização
+- priorizar reaproveitamento de componentes
+
+Refatoração deve ser progressiva:
+- não quebrar sistema atual
+- melhorar aos poucos
+- manter estabilidade
+
+========================================
+📌 15. MATURIDADE DOS MÓDULOS
+========================================
+
+Classificar cada módulo como:
+- Produção
+- Homologação
+- Em desenvolvimento
+- Planejado
+
+Exemplo:
+- SaaS / Assinaturas: Produção
+- Pedidos: Produção
+- Produção / OP: Homologação avançada
+- WhatsApp: Homologação avançada / rollout controlado
+- IA assistida: Planejado
+
+========================================
+📌 16. HIERARQUIA DE PRIORIDADES
+========================================
+
+Quando houver conflito entre opções, priorizar nesta ordem:
+1. Segurança e integridade dos dados
+2. Isolamento multi-tenant
+3. Continuidade operacional
+4. Simplicidade para o usuário final
+5. Escalabilidade
+6. Sofisticação visual
+
+Nunca sacrificar segurança ou tenancy por estética.
+
+========================================
+📌 17. PADRÃO DE NOMENCLATURA E MICROCOPY
+========================================
+
+- Usar Português do Brasil em toda interface
+- Preferir termos simples e operacionais
+- Evitar jargões técnicos para o usuário final
+- Manter consistência entre títulos, botões e mensagens
+- Usar nomenclatura estável para módulos:
+  - Pedidos
+  - Produção
+  - Chão de Fábrica
+  - Configurações OPs
+  - WhatsApp
+  - Financeiro
+
+========================================
+📌 18. INTEGRIDADE, AUDITORIA E RASTREABILIDADE
+========================================
+
+Toda alteração relevante deve considerar:
+- quem fez
+- quando fez
+- em qual loja
+- impacto gerado
+
+Priorizar:
+- logs operacionais
+- rastreabilidade de mudanças de status
+- histórico de automações
+- auditoria de integrações externas
+
+========================================
+📌 19. ESTRATÉGIA DE EVOLUÇÃO
+========================================
+
+Toda melhoria deve considerar rollout progressivo:
+- refatorar sem quebrar fluxo atual
+- preservar compatibilidade quando possível
+- usar feature flags para recursos sensíveis
+- evitar mudanças amplas sem plano de migração
+
+========================================
+📌 20. PADRÃO TÉCNICO DE INTERFACE
+========================================
+
+Toda nova tela ou refatoração deve:
+- reutilizar componentes existentes sempre que possível
+- evitar CSS ad hoc por página
+- convergir progressivamente para um conjunto único de:
+  - cards
+  - botões
+  - inputs
+  - badges
+  - tabelas
+  - filtros
+  - cabeçalhos de página
+
+Objetivo:
+evoluir para um design system real e reutilizável.
+
+========================================
+📌 21. PRINCÍPIOS POR TIPO DE TELA
+========================================
+
+Telas operacionais:
+- priorizar velocidade, leitura e ação
+- menos decoração, mais clareza
+
+Telas gerenciais:
+- priorizar indicadores, comparativos e insights
+
+Telas financeiras:
+- priorizar precisão, status e vencimentos
+
+Telas de configuração:
+- priorizar organização, explicação curta e segurança
+
+========================================
+📌 22. IA ASSISTIDA (REGRAS FUTURAS)
+========================================
+
+A IA deve:
+- sugerir, não executar autonomamente sem controle
+- sempre permitir revisão humana
+- nunca alterar dados críticos sem confirmação
+- respeitar tenancy, permissões e contexto da loja
+- atuar primeiro em:
+  - sugestão de resposta
+  - resumo
+  - classificação
+  - preenchimento assistido
+
+

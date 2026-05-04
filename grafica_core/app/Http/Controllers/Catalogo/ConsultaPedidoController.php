@@ -12,12 +12,17 @@ namespace App\Http\Controllers\Catalogo;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pedido;
+use App\Services\SaaS\TenantContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class ConsultaPedidoController extends Controller
 {
+    public function __construct(
+        protected TenantContext $tenantContext
+    ) {}
+
     public function formulario(): View
     {
         return view('publico.consulta-pedido');
@@ -30,9 +35,23 @@ class ConsultaPedidoController extends Controller
             'contato' => ['required', 'string', 'max:150'],
         ]);
 
+        // SEGURANÇA: Obter loja do contexto atual (subdomínio/domínio)
+        $lojaId = $this->tenantContext->getLojaId();
+        if (empty($lojaId)) {
+            return back()->withErrors([
+                'codigo' => 'Não foi possível identificar a loja. Acesse pelo endereço correto.',
+            ])->withInput();
+        }
+
         $pedido = Pedido::query()
+            ->withoutGlobalScope('loja') // Remove scope para aplicar manualmente com segurança
+            ->where('loja_id', $lojaId)  // TENANT SAFETY: Filtro explícito
             ->with(['cliente', 'itens', 'pagamentos'])
-            ->where('numero', $dados['codigo'])
+            ->where(function ($query) use ($dados) {
+                // Busca por codigo_pedido (novo) ou numero (legado)
+                $query->where('codigo_pedido', $dados['codigo'])
+                      ->orWhere('numero', $dados['codigo']);
+            })
             ->whereHas('cliente', function ($query) use ($dados): void {
                 $query
                     ->where('telefone', $dados['contato'])

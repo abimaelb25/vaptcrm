@@ -14,6 +14,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ItemPedido;
 use App\Models\Pedido;
 use App\Models\Produto;
+use App\Services\SaaS\PlanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,10 @@ use Illuminate\View\View;
 
 class PrecificadorController extends Controller
 {
+    public function __construct(
+        private readonly PlanService $planService,
+    ) {}
+
     /**
      * Renderiza a Calculadora UX.
      */
@@ -51,6 +56,8 @@ class PrecificadorController extends Controller
         ]);
 
         try {
+            $this->planService->ensureLimit('max_produtos', 1);
+
             DB::beginTransaction();
 
             // Salva como Produto Ativo e Disponível. Destaque desativado para nao poluir a index por padrão
@@ -89,9 +96,9 @@ class PrecificadorController extends Controller
         ]);
 
         try {
-            DB::beginTransaction();
-
             $pedido = Pedido::findOrFail($dados['pedido_id']);
+
+            DB::beginTransaction();
 
             ItemPedido::create([
                 'pedido_id' => $pedido->id,

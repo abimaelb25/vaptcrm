@@ -4,23 +4,20 @@ Site: https://abimaelborges.adv.br
 Modificado em: 2026-04-10
 --}}
 <x-layouts.publico>
-    {{-- Breadcrumbs --}}
-    <nav class="flex mb-4 text-xs font-bold uppercase tracking-widest text-slate-400 gap-2 items-center">
-        <a href="{{ route('site.inicio') }}" class="hover:text-brand-primary transition-colors">Início</a>
-        <span>/</span>
-        <a href="{{ route('site.catalogo') }}" class="hover:text-brand-primary transition-colors">Catálogo</a>
-        <span>/</span>
-        <span class="text-brand-primary">{{ $categoria->nome }}</span>
-    </nav>
+    <x-public.breadcrumb :items="[
+        ['label' => 'Início', 'url' => \App\Support\PublicUrlHelper::inicio()],
+        ['label' => 'Catálogo', 'url' => \App\Support\PublicUrlHelper::catalogo()],
+        ['label' => $categoria->nome],
+    ]" />
 
     {{-- Banner da categoria --}}
     @if($categoria->banner)
-        <div class="relative w-full h-52 sm:h-64 mb-8 rounded-3xl overflow-hidden shadow-xl">
+        <div class="relative mb-6 h-44 w-full overflow-hidden rounded-2xl shadow-xl sm:mb-8 sm:h-64 sm:rounded-3xl">
             <img src="{{ asset('storage/' . $categoria->banner) }}" alt="{{ $categoria->nome }}" class="absolute inset-0 w-full h-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-t from-brand-secondary/80 via-brand-secondary/30 to-transparent"></div>
-            <div class="absolute bottom-0 left-0 right-0 p-6">
+            <div class="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
                 <p class="text-orange-300 font-black uppercase tracking-widest text-xs mb-1">Categoria</p>
-                <h1 class="text-4xl font-black text-white">{{ $categoria->nome }}</h1>
+                <h1 class="text-2xl font-black text-white sm:text-4xl">{{ $categoria->nome }}</h1>
                 @if($categoria->descricao)
                     <p class="text-white/80 mt-1 font-medium">{{ $categoria->descricao }}</p>
                 @endif
@@ -50,10 +47,10 @@ Modificado em: 2026-04-10
                     <p class="text-white font-black text-xs uppercase tracking-widest">Outras Categorias</p>
                 </div>
                 <nav class="p-3 space-y-1">
-                    <a href="{{ route('site.catalogo') }}" class="flex items-center px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition">🛍️ Ver Tudo</a>
+                    <a href="{{ \App\Support\PublicUrlHelper::catalogo() }}" class="flex items-center px-4 py-2.5 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition">🛍️ Ver Tudo</a>
                     @foreach($categorias as $cat)
                         @if($cat->total_publico > 0)
-                            <a href="{{ route('site.categoria', $cat->slug) }}" class="flex items-center justify-between px-4 py-2.5 rounded-xl font-bold text-sm transition {{ $cat->id === $categoria->id ? 'bg-brand-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50' }}">
+                            <a href="{{ \App\Support\PublicUrlHelper::categoria($cat) }}" class="flex items-center justify-between px-4 py-2.5 rounded-xl font-bold text-sm transition {{ $cat->id === $categoria->id ? 'bg-brand-primary text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50' }}">
                                 <span>{{ $cat->nome }}</span>
                                 <span class="text-xs ml-2 {{ $cat->id === $categoria->id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500' }} rounded-full px-2 py-0.5 font-black">{{ $cat->total_publico }}</span>
                             </a>

@@ -44,4 +44,14 @@ class Fornecedor extends Model
     {
         return $this->hasMany(EstoqueMovimentacao::class);
     }
+
+    public function documentosFiscaisEntrada(): HasMany
+    {
+        return $this->hasMany(DocumentoFiscalEntrada::class, 'fornecedor_id');
+    }
+
+    public function mapeamentosProdutos(): HasMany
+    {
+        return $this->hasMany(FornecedorProdutoMapeamento::class, 'fornecedor_id');
+    }
 }

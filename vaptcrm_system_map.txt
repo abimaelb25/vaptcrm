@@ -1,0 +1,255 @@
+========================================
+🧠 VAPTCRM — ORGANOGRAMA DO SISTEMA (VERSÃO ATUALIZADA)
+========================================
+
+========================================
+🚀 1. JORNADA DA ASSINATURA (SaaS)
+========================================
+
+1. Landing Page
+- Apresentação do produto
+- Planos e benefícios
+
+2. Registro
+- Criação da conta
+- Criação da loja (tenant)
+
+3. Ativação
+- Trial iniciado
+- Usuário admin criado
+
+4. Configuração Inicial
+- Branding (logo, cores)
+- Dados da empresa
+- Configuração básica de operação
+
+5. Sistema Ativo
+- Painel liberado
+- Catálogo público disponível
+
+========================================
+🏗 2. ARQUITETURA DO SISTEMA
+========================================
+
+Modelo:
+- SaaS multi-tenant
+
+Regras:
+- Isolamento total por loja_id
+- Dados, usuários, configurações independentes
+- Feature flags por plano
+
+Gestão central:
+- Super Admin controla:
+  - lojas
+  - planos
+  - assinaturas
+  - limites
+
+========================================
+📦 3. MÓDULOS DO SISTEMA
+========================================
+
+🔵 COMERCIAL
+
+1. Catálogo Público
+- Produtos e categorias
+- Upload de arquivos
+- Checkout
+- Pedido online
+- Domínio/subdomínio
+
+2. CRM / Clientes
+- Cadastro
+- Histórico de pedidos
+- Contatos
+
+3. Pedidos
+- Kanban (drag & drop)
+- Status operacional
+- Histórico
+- Reordenação
+
+4. PDV
+- Venda rápida
+- Criação de pedidos manual
+
+----------------------------------------
+
+🟠 OPERAÇÃO
+
+5. Produção (Chão de Fábrica)
+- Monitor de produção
+- Status por etapa
+- Evolução do pedido
+- Gerenciamento de etapas
+
+6. Configuração de OPs
+- Fluxos de produção
+- Etapas personalizadas
+- Ordem operacional
+
+----------------------------------------
+
+🟢 FINANCEIRO
+
+7. Financeiro
+- Contas a pagar
+- Contas a receber
+- Fluxo de caixa
+- Movimentações
+- Relatórios
+
+----------------------------------------
+
+🟣 ESTOQUE
+
+8. Estoque
+- Insumos
+- Entradas e saídas
+- Controle mínimo
+- Movimentações
+
+----------------------------------------
+
+🟡 SUPORTE
+
+9. Suporte
+- Tickets
+- Base de conhecimento
+- Comunicação com plataforma
+
+----------------------------------------
+
+🔴 ADMINISTRAÇÃO
+
+10. Administração (Master)
+- Gestão de lojas
+- Planos e assinaturas
+- Limites SaaS
+- Relatórios globais
+
+----------------------------------------
+
+🎨 SISTEMA
+
+11. Aparência & Branding
+- Logo
+- Cores
+- Identidade visual
+- Configuração da loja
+
+12. Páginas Legais
+- Termos
+- Privacidade
+- LGPD
+
+========================================
+💬 4. WHATSAPP (NÚCLEO DO SISTEMA)
+========================================
+
+O WhatsApp é o centro da operação.
+
+Modos:
+
+1. Manual (padrão)
+- Link direto (wa.me)
+- Envio assistido
+
+2. Oficial (API Meta)
+- Templates aprovados
+- Envio automático
+- Webhooks
+- Inbox completo
+
+----------------------------------------
+
+📩 EVENTOS AUTOMÁTICOS
+
+- Pedido criado
+- Pedido em produção
+- Pedido pronto
+- Pedido enviado
+- Pedido entregue
+
+----------------------------------------
+
+🧠 AUTOMAÇÃO
+
+- Disparo automático por evento
+- Fallback manual
+- Controle por plano
+- Logs e auditoria
+
+----------------------------------------
+
+📊 CAMADAS
+
+- Envio
+- Recebimento
+- Conversas
+- Templates
+- Webhooks
+- Opt-in
+
+========================================
+🔄 5. FLUXO OPERACIONAL REAL
+========================================
+
+1. Cliente faz pedido:
+- Catálogo público
+ou
+- PDV
+
+2. Pedido entra no sistema:
+- aparece no Kanban
+
+3. Produção executa:
+- atualiza status
+- avança etapas
+
+4. Sistema dispara:
+- WhatsApp (manual ou automático)
+
+5. Financeiro:
+- acompanha pagamento
+- controla fluxo
+
+6. Entrega:
+- status final
+- notificação ao cliente
+
+========================================
+🎯 6. CAMADAS DE INTELIGÊNCIA (EVOLUÇÃO)
+========================================
+
+Fase atual:
+- automação básica de eventos
+
+Próxima fase:
+- IA assistida:
+  - sugestão de mensagens
+  - respostas inteligentes
+  - análise de pedidos
+
+========================================
+🎨 7. DESIGN SYSTEM (OBRIGATÓRIO)
+========================================
+
+- padrão visual único
+- componentes reutilizáveis
+- consistência entre módulos
+
+========================================
+⚠️ 8. PRINCÍPIOS FUNDAMENTAIS
+========================================
+
+- multi-tenant inviolável
+- simplicidade para usuário leigo
+- WhatsApp como núcleo
+- foco em operação real
+- evolução incremental
+
+========================================
+FIM DO ORGANOGRAMA
+========================================

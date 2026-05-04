@@ -11,32 +11,26 @@ namespace App\Services\SaaS;
 | Descrição: Controle de acesso a recursos financeiros baseados no plano SaaS.
 */
 
-use App\Models\Loja;
-
 class FinancePlanService
 {
+    public function __construct(
+        private readonly PlanService $planService,
+    ) {}
+
     /**
      * Verifica o nível financeiro permitido.
      * Retornos: 'basico', 'pro', 'premium'
      */
     public function getFinanceLevel(): string
     {
-        $usuario = auth()->user();
-        if (!$usuario || !$usuario->loja_id) return 'basico';
+        if ($this->planService->hasFeature('modulo_financeiro_premium')) {
+            return 'premium';
+        }
 
-        $loja = Loja::find($usuario->loja_id);
-        if (!$loja) return 'basico';
+        if ($this->planService->hasFeature('modulo_financeiro')) {
+            return 'pro';
+        }
 
-        $assinaturaAtiva = $loja->assinaturaAtiva();
-        $plano = $assinaturaAtiva ? $assinaturaAtiva->plano : $loja->plano;
-        
-        if (!$plano) return 'basico';
-
-        $recursos = is_array($plano->recursos_premium) ? $plano->recursos_premium : [];
-        
-        if (in_array('financeiro_premium', $recursos)) return 'premium';
-        if (in_array('financeiro_pro', $recursos)) return 'pro';
-        
         return 'basico';
     }
 

@@ -31,7 +31,7 @@
             <div class="relative z-10">
                 <h1 class="text-4xl md:text-5xl font-black tracking-tight mb-4">{{ $configSite['loja_subtitulo'] ?? 'Soluções gráficas de alta performance' }}</h1>
                 <p class="mt-4 text-xl text-slate-300 max-w-2xl mx-auto">{{ $configSite['aparencia_rodape_texto'] ?? 'Sua marca com a apresentação perfeita. Prazos imbatíveis e qualidade garantida.' }}</p>
-                <a href="{{ route('site.catalogo') }}" class="mt-8 inline-block bg-brand-primary text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-white hover:text-brand-primary transition-colors">Solicitar Orçamento</a>
+                <a href="{{ \App\Support\PublicUrlHelper::catalogo() }}" class="mt-8 inline-block bg-brand-primary text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-white hover:text-brand-primary transition-colors">Solicitar Orçamento</a>
             </div>
         </section>
     @endif
@@ -69,7 +69,7 @@
                 <h2 class="text-3xl font-black text-brand-secondary tracking-tight">Produtos em Destaque</h2>
                 <p class="text-slate-500 mt-1">Nossos materiais mais vendidos com preço especial.</p>
             </div>
-            <a href="{{ route('site.catalogo') }}" class="font-bold text-brand-primary hover:text-brand-secondary transition-colors underline decoration-2 underline-offset-4">Ver todo o catálogo &plus;</a>
+            <a href="{{ \App\Support\PublicUrlHelper::catalogo() }}" class="font-bold text-brand-primary hover:text-brand-secondary transition-colors underline decoration-2 underline-offset-4">Ver todo o catálogo &plus;</a>
         </div>
 
         <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -146,5 +146,5 @@
     </section>
     @endif
 
-</x-layouts.app>
+</x-layouts.publico>
 

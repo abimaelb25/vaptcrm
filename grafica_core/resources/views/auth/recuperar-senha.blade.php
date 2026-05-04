@@ -1,54 +1,73 @@
 {{--
 Autoria: Abimael Borges
 Site: https://abimaelborges.adv.br
-Criado em: 2026-04-16
+Data: 17/04/2026
+Descrição: Página de solicitação de recuperação de senha.
 --}}
-<x-layouts.app>
-    <section class="max-w-md mx-auto mt-10 overflow-hidden rounded-2xl border bg-white shadow-xl">
-        <div class="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-6 py-8 text-center text-white">
-            <img src="{{ asset('img/logo_horizontal.png') }}" alt="VaptCRM" class="mx-auto h-16 drop-shadow-md">
-            <h2 class="mt-4 text-xl font-bold">Recuperação de Senha</h2>
-            <p class="mt-2 text-sm font-medium text-blue-100">Enviaremos instruções para o seu e-mail</p>
+<x-layouts.app titulo="Recuperar Senha - VaptCRM">
+    <section class="max-w-md mx-auto mt-10 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl animate-fade-in-up">
+        
+        <div class="bg-gradient-to-br from-brand-secondary to-slate-800 px-6 py-10 text-center text-white relative">
+            <div class="absolute top-0 right-0 p-4 opacity-10">
+                 <x-icon name="envelope" class="w-20 h-20" />
+            </div>
+
+            <img src="{{ asset('img/logo_horizontal.png') }}" alt="VaptCRM" class="mx-auto h-12 drop-shadow-md relative z-10">
+            <h2 class="mt-6 text-2xl font-black tracking-tight">Esqueceu a senha?</h2>
+            <p class="mt-2 text-sm font-medium text-slate-300">Enviaremos as instruções para o seu e-mail cadastrado</p>
         </div>
         
-        <div class="p-6">
+        <div class="p-8">
 
-        @if($errors->any())
-            <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {{ $errors->first() }}
-            </div>
-        @endif
-
-        @if(session('sucesso'))
-            <div class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                <div class="flex items-start gap-2">
-                    <svg class="h-5 w-5 text-emerald-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{{ session('sucesso') }}</span>
+            @if($errors->any())
+                <div class="mb-6 rounded-2xl border border-status-error/20 bg-status-error/5 p-4 text-sm text-status-error animate-shake">
+                    <div class="flex items-center gap-2 font-bold mb-1">
+                        <x-icon name="exclamation-circle" class="w-5 h-5" />
+                        <span>Atenção:</span>
+                    </div>
+                    <span>{{ $errors->first() }}</span>
                 </div>
-            </div>
-        @endif
+            @endif
 
-        <form method="POST" action="{{ route('password.email') }}" class="mt-6 space-y-4">
-            @csrf
-            
-            <div>
-                <label class="text-sm font-semibold text-slate-700">E-mail Cadastrado</label>
-                <input type="email" name="email" value="{{ old('email') }}" required placeholder="Digite seu e-mail de acesso" class="mt-1 w-full rounded-lg border px-4 py-2.5 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
-            </div>
+            @if(session('sucesso'))
+                <div class="mb-6 rounded-2xl border border-status-success/20 bg-status-success/5 p-5 text-sm text-status-success animate-fade-in">
+                    <div class="flex items-start gap-4">
+                        <div class="bg-status-success/20 p-2 rounded-full">
+                            <x-icon name="check" class="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p class="font-black uppercase tracking-widest text-[10px] mb-1">Sucesso!</p>
+                            <p class="font-medium leading-relaxed">{{ session('sucesso') }}</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
-            <button type="submit" class="mt-6 w-full rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 font-bold text-white shadow-md transition-transform hover:scale-[1.02]">Enviar Instruções</button>
-            
-            <div class="mt-6 text-center">
-                <a href="{{ route('login') }}" class="text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors flex items-center justify-center gap-1">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Voltar para o Login
-                </a>
-            </div>
-        </form>
+            <form method="POST" action="{{ route('password.email') }}" class="space-y-6">
+                @csrf
+                
+                <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Seu E-mail</label>
+                    <div class="relative group">
+                        <input type="email" name="email" value="{{ old('email') }}" required placeholder="Digite seu e-mail de acesso" class="w-full rounded-2xl border border-slate-200 px-5 py-3.5 transition-all focus:border-brand-primary focus:outline-none focus:ring-4 focus:ring-brand-primary/10" />
+                        <div class="absolute inset-y-0 right-4 flex items-center text-slate-300 group-focus-within:text-brand-primary transition-colors">
+                             <x-icon name="at-symbol" class="w-5 h-5" />
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full rounded-2xl bg-brand-primary py-4 font-black text-white shadow-xl shadow-brand-primary/20 transition-all hover:scale-[1.02] hover:bg-orange-600 active:scale-95 flex items-center justify-center gap-2">
+                    Enviar Instruções
+                    <x-icon name="arrow-right" class="w-5 h-5" />
+                </button>
+                
+                <div class="pt-4 text-center">
+                    <a href="{{ route('login') }}" class="text-xs font-black text-slate-400 hover:text-brand-secondary transition-colors flex items-center justify-center gap-2 uppercase tracking-widest">
+                        <x-icon name="arrow-left" class="w-4 h-4" />
+                        Voltar para o Login
+                    </a>
+                </div>
+            </form>
         </div>
     </section>
 </x-layouts.app>

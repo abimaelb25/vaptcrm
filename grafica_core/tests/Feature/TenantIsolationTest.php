@@ -8,10 +8,9 @@ use App\Models\Cliente;
 use App\Models\Loja;
 use App\Models\Pedido;
 use App\Models\Usuario;
-use Database\Factories\ClienteFactory;
-use Database\Factories\LojaFactory;
-use Database\Factories\UsuarioFactory;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 /**
@@ -50,6 +49,19 @@ use Tests\TestCase;
 final class TenantIsolationTest extends TestCase
 {
     // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    private function criarUsuarioParaLoja(Loja $loja): Usuario
+    {
+        return Usuario::query()->create([
+            'loja_id' => $loja->id,
+            'nome' => 'Usuario Teste ' . uniqid(),
+            'email' => 'usuario+' . uniqid() . '@teste.local',
+            'senha' => Hash::make('secret123'),
+            'perfil' => 'administrador',
+            'ativo' => true,
+            'permissoes' => [],
+        ]);
+    }
 
     /**
      * Executa $callback simulando contexto HTTP (não-console).
@@ -120,7 +132,7 @@ final class TenantIsolationTest extends TestCase
         $lojaA = Loja::factory()->create();
         $lojaB = Loja::factory()->create();
 
-        $userA = Usuario::factory()->paraLoja($lojaA)->create();
+        $userA = $this->criarUsuarioParaLoja($lojaA);
 
         Cliente::factory()->paraLoja($lojaA)->create(['nome' => 'Cliente da Loja A']);
         Cliente::factory()->paraLoja($lojaB)->create(['nome' => 'Cliente da Loja B']);
@@ -153,7 +165,7 @@ final class TenantIsolationTest extends TestCase
         $lojaA = Loja::factory()->create();
         $lojaB = Loja::factory()->create();
 
-        $userA    = Usuario::factory()->paraLoja($lojaA)->create();
+        $userA    = $this->criarUsuarioParaLoja($lojaA);
         $clienteB = Cliente::factory()->paraLoja($lojaB)->create();
 
         $resultado = $this->withHttpContext(function () use ($userA, $clienteB): ?Cliente {
@@ -180,36 +192,40 @@ final class TenantIsolationTest extends TestCase
         $lojaA = Loja::factory()->create();
         $lojaB = Loja::factory()->create();
 
-        $userA = Usuario::factory()->paraLoja($lojaA)->create();
-        $userB = Usuario::factory()->paraLoja($lojaB)->create();
+        $userA = $this->criarUsuarioParaLoja($lojaA);
+        $userB = $this->criarUsuarioParaLoja($lojaB);
 
         $clienteA = Cliente::factory()->paraLoja($lojaA)->create();
         $clienteB = Cliente::factory()->paraLoja($lojaB)->create();
 
-        // Criação direta via Eloquent — bypassa o scope (running in console)
-        // para podermos inserir dados das duas lojas no setup do teste.
-        Pedido::create([
-            'loja_id'           => $lojaA->id,
-            'cliente_id'        => $clienteA->id,
-            'responsavel_id'    => $userA->id,
-            'numero'            => 'PED-A-' . uniqid(),
-            'numero_sequencial' => 1,
-            'codigo_pedido'     => 'LA-26-0001',
-            'status'            => Pedido::STATUS_AGUARDANDO,
-            'subtotal'          => 150.00,
-            'total'             => 150.00,
-        ]);
-
-        Pedido::create([
-            'loja_id'           => $lojaB->id,
-            'cliente_id'        => $clienteB->id,
-            'responsavel_id'    => $userB->id,
-            'numero'            => 'PED-B-' . uniqid(),
-            'numero_sequencial' => 1,
-            'codigo_pedido'     => 'LB-26-0001',
-            'status'            => Pedido::STATUS_AGUARDANDO,
-            'subtotal'          => 300.00,
-            'total'             => 300.00,
+        // Inserção direta para evitar observers de assinatura/plano durante setup.
+        DB::table('pedidos')->insert([
+            [
+                'loja_id' => $lojaA->id,
+                'cliente_id' => $clienteA->id,
+                'responsavel_id' => $userA->id,
+                'numero' => 'PED-A-' . uniqid(),
+                'numero_sequencial' => 1,
+                'codigo_pedido' => 'LA-26-0001',
+                'status' => Pedido::STATUS_AGUARDANDO,
+                'subtotal' => 150.00,
+                'total' => 150.00,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'loja_id' => $lojaB->id,
+                'cliente_id' => $clienteB->id,
+                'responsavel_id' => $userB->id,
+                'numero' => 'PED-B-' . uniqid(),
+                'numero_sequencial' => 1,
+                'codigo_pedido' => 'LB-26-0001',
+                'status' => Pedido::STATUS_AGUARDANDO,
+                'subtotal' => 300.00,
+                'total' => 300.00,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ]);
 
         // Verificação para userA
@@ -258,7 +274,7 @@ final class TenantIsolationTest extends TestCase
         $lojaA = Loja::factory()->create();
         $lojaB = Loja::factory()->create();
 
-        $userA = Usuario::factory()->paraLoja($lojaA)->create();
+        $userA = $this->criarUsuarioParaLoja($lojaA);
 
         Cliente::factory()->paraLoja($lojaA)->create();
         Cliente::factory()->paraLoja($lojaB)->create();

@@ -112,9 +112,9 @@ Modificado em: 2026-04-06 00:00 -03:00
                                 <span class="rounded bg-slate-100 px-2.5 py-1 text-xs font-bold font-mono border text-slate-600 uppercase">{{ $pedido->status }}</span>
                             </td>
                             <td class="px-5 py-4 text-slate-500">
-                                {{ $pedido->itensPedido->count() }} Item(s)
+                                {{ $pedido->itens->count() }} Item(s)
                                 <div class="text-xs text-slate-400 mt-1 line-clamp-1">
-                                    @foreach($pedido->itensPedido as $item)
+                                    @foreach($pedido->itens as $item)
                                         {{ $item->produto->nome ?? 'Produto Customizado' }}@if(!$loop->last), @endif
                                     @endforeach
                                 </div>

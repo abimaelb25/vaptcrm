@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('painel')->group(function () {
+Route::middleware(['auth', 'assinatura'])->prefix('painel')->group(function () {
     Route::redirect('comercial/pedidos', '/painel/vendas/pedidos', 301);
     Route::redirect('comercial/clientes', '/painel/vendas/clientes', 301);
     Route::redirect('operacao/produtos', '/painel/catalogo/produtos', 301);

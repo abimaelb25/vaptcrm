@@ -31,6 +31,7 @@ class Produto extends Model
         'subtitulo_comercial',
         'frase_efeito',
         'badge_comercial',
+        'categoria',
         'categoria_id',
         'descricao_curta',
         'descricao_completa',
@@ -139,6 +140,22 @@ class Produto extends Model
     public function imagens(): HasMany
     {
         return $this->hasMany(ProdutoImagem::class, 'produto_id')->orderBy('ordem');
+    }
+
+    /**
+     * Etapas de produção específicas deste produto.
+     */
+    public function etapasProducao(): HasMany
+    {
+        return $this->hasMany(ProdutoEtapaProducao::class, 'produto_id')->orderBy('ordem');
+    }
+
+    /**
+     * Indica se o produto requer produção interna.
+     */
+    public function requiresProduction(): bool
+    {
+        return $this->modo_producao !== 'terceirizado';
     }
 }
 

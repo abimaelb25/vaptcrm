@@ -14,9 +14,12 @@ namespace App\Models\SaaS;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Loja;
+use App\Traits\HasTenancy;
 
 class ConsumoMetrica extends Model
 {
+    use HasTenancy;
+
     protected $table = 'saas_consumo_metricas';
 
     protected $fillable = [

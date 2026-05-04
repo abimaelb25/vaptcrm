@@ -36,20 +36,30 @@ class TenantDiscoveryMiddleware
         // Se estivermos no domínio principal (plataforma), não carregamos tenant específico por padrão.
         if ($host === $baseHost || $host === 'localhost' || $host === '127.0.0.1') {
             
-            // CONVENIÊNCIA PARA DESENVOLVIMENTO LOCAL
+            // CONVENIÊNCIA PARA DESENVOLVIMENTO LOCAL (127.0.0.1 / localhost)
+            // Agora que o middleware roda após o StartSession, podemos usar a sessão.
             if (config('app.env') === 'local') {
                 $loja = null;
 
-                // 1. Prioridade: Parâmetro na URL (?loja=slug)
+                // 1. Prioridade absoluta: Parâmetro explicitamente na URL (?loja=slug)
                 if ($request->has('loja')) {
                     $loja = Loja::where('slug', $request->query('loja'))->first();
+                    if ($loja) {
+                        $request->session()->put('tenant_test_loja_id', $loja->id);
+                    }
                 }
 
-                // 2. Fallback: Primeira loja do banco para facilitar testes
-                if (!$loja) {
-                    $loja = Loja::first();
+                // 2. Fallback local: Recupera da sessão (persistência durante navegação em dev)
+                if (!$loja && $request->session()->has('tenant_test_loja_id')) {
+                    $lojaId = $request->session()->get('tenant_test_loja_id');
+                    $loja = Loja::find($lojaId);
                 }
-                
+
+                // 3. Fallback Logado: Se o usuário estiver autenticado, assume a loja dele
+                if (!$loja && auth()->check()) {
+                    $loja = auth()->user()->loja;
+                }
+
                 if ($loja) {
                     $this->tenantContext->setLoja($loja);
                     View::share('lojaAtual', $loja);

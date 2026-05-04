@@ -39,8 +39,14 @@
             "@php artisan key:generate",
             "@php artisan storage:link",
             "@php artisan migrate --force",
+            "@php artisan saas:check-integrity",
             "npm install",
             "npm run build"
+        ],
+        "deploy": [
+            "@php artisan migrate --force",
+            "@php artisan saas:check-integrity",
+            "@composer otimizar"
         ],
         "otimizar": [
             "@php artisan config:cache",

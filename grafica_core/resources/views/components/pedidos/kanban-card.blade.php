@@ -14,7 +14,7 @@
      data-status="{{ $pedido->status }}">
     
     <div class="flex justify-between items-start mb-2">
-        <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">#{{ $pedido->numero }}</span>
+        <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter" title="{{ $pedido->codigo_pedido ?? $pedido->numero }}">{{ $pedido->numero_balcao ?? '#' . $pedido->numero }}</span>
         <div class="flex gap-1">
             @if($pedido->origem === 'online')
                 <div class="h-2 w-2 rounded-full bg-purple-500" title="Origem: Site/Online"></div>

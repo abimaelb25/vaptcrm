@@ -22,9 +22,35 @@ class Loja extends Model
 
     protected $table = 'lojas';
 
+    /**
+     * Boot do modelo para validações.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        // Impedir alteração do codigo_loja se já existirem pedidos
+        static::updating(function (Loja $loja): void {
+            if ($loja->isDirty('codigo_loja') && $loja->getOriginal('codigo_loja') !== null) {
+                // Verificar se existem pedidos com este código
+                $temPedidos = Pedido::withoutGlobalScope('loja')
+                    ->where('loja_id', $loja->id)
+                    ->exists();
+
+                if ($temPedidos) {
+                    throw new \RuntimeException(
+                        'Não é possível alterar o código da loja após existirem pedidos. ' .
+                        'O código atual é: ' . $loja->getOriginal('codigo_loja')
+                    );
+                }
+            }
+        });
+    }
+
     protected $fillable = [
         'nome_fantasia',
         'slug',
+        'codigo_loja',
         'responsavel_nome',
         'responsavel_email',
         'responsavel_whatsapp',
@@ -36,11 +62,23 @@ class Loja extends Model
         'storage_used_bytes',
         'subdominio',
         'dominio_personalizado',
+        'smtp_host',
+        'smtp_port',
+        'smtp_username',
+        'smtp_password',
+        'smtp_encryption',
+        'smtp_from_address',
+        'smtp_from_name',
         'observacoes_internas',
         'bloqueada_em',
         'motivo_bloqueio',
         'dias_carencia',
+        'limites_desbloqueados_ate',
         'ultima_notificacao_em',
+    ];
+
+    protected $hidden = [
+        'smtp_password',
     ];
 
     protected $casts = [
@@ -48,6 +86,7 @@ class Loja extends Model
         'assinatura_ativa_ate' => 'datetime',
         'storage_limit_mb' => 'integer',
         'storage_used_bytes' => 'integer',
+        'limites_desbloqueados_ate' => 'datetime',
         'bloqueada_em' => 'datetime',
         'ultima_notificacao_em' => 'datetime',
     ];
@@ -125,7 +164,16 @@ class Loja extends Model
     }
 
     /**
+     * Verifica se a loja possui limites desbloqueados manualmente pelo suporte.
+     */
+    public function limitesDesbloqueados(): bool
+    {
+        return $this->limites_desbloqueados_ate !== null && $this->limites_desbloqueados_ate->isFuture();
+    }
+
+    /**
      * Bloqueia a loja com um motivo.
+     * Invalida todos os caches relacionados para garantir consistência imediata.
      */
     public function bloquear(string $motivo = 'Inadimplência'): void
     {
@@ -133,10 +181,13 @@ class Loja extends Model
             'bloqueada_em' => now(),
             'motivo_bloqueio' => $motivo,
         ]);
+
+        $this->invalidarTodosOsCaches();
     }
 
     /**
      * Desbloqueia a loja.
+     * Invalida todos os caches relacionados para garantir consistência imediata.
      */
     public function desbloquear(): void
     {
@@ -144,6 +195,42 @@ class Loja extends Model
             'bloqueada_em' => null,
             'motivo_bloqueio' => null,
         ]);
+
+        $this->invalidarTodosOsCaches();
+    }
+
+    /**
+     * Invalida todos os caches relacionados a esta loja.
+     * Deve ser chamado sempre que dados críticos forem alterados pelo Super-Admin.
+     * 
+     * Caches invalidados:
+     * - saas_assinatura_ativa_loja_{id} → SaaSService
+     * - tenant_id_host_{host} → TenantDiscoveryMiddleware (subdomínio e domínio personalizado)
+     * 
+     * Autoria: Abimael Borges | https://abimaelborges.adv.br | 2026-04-18
+     */
+    public function invalidarTodosOsCaches(): void
+    {
+        $cache = \Illuminate\Support\Facades\Cache::getFacadeRoot();
+
+        // 1. Cache de assinatura SaaS
+        $cache->forget("saas_assinatura_ativa_loja_{$this->id}");
+
+        // 2. Cache de tenant por subdomínio
+        if ($this->subdominio) {
+            $baseHost = parse_url(config('app.url'), PHP_URL_HOST);
+            $host = "{$this->subdominio}.{$baseHost}";
+            $cache->forget("tenant_id_host_{$host}");
+        }
+
+        // 3. Cache de tenant por domínio personalizado
+        if ($this->dominio_personalizado) {
+            $cache->forget("tenant_id_host_{$this->dominio_personalizado}");
+        }
+
+        // 4. Cache de branding/configurações
+        $cache->forget("site_configs_{$this->id}");
+        $cache->forget("paginas_legais_{$this->id}");
     }
 
     /**
@@ -156,5 +243,50 @@ class Loja extends Model
             ->whereIn('status', ['active', 'past_due', 'trial'])
             ->latest()
             ->first();
+    }
+
+    /**
+     * Verifica se a loja possui configuração SMTP própria válida.
+     */
+    public function possuiSmtpProprio(): bool
+    {
+        return !empty($this->smtp_host)
+            && !empty($this->smtp_port)
+            && !empty($this->smtp_from_address);
+    }
+
+    /**
+     * Retorna array de configuração SMTP para uso com mailer dinâmico.
+     */
+    public function getSmtpConfig(): array
+    {
+        return [
+            'transport'  => 'smtp',
+            'host'       => $this->smtp_host,
+            'port'       => $this->smtp_port,
+            'username'   => $this->smtp_username,
+            'password'   => $this->smtp_password,
+            'encryption' => $this->smtp_encryption ?? 'tls',
+        ];
+    }
+
+    /**
+     * Retorna o e-mail remetente da loja (SMTP próprio ou responsável).
+     */
+    public function getFromAddress(): string
+    {
+        return $this->smtp_from_address
+            ?? $this->responsavel_email
+            ?? config('mail.from.address');
+    }
+
+    /**
+     * Retorna o nome remetente da loja.
+     */
+    public function getFromName(): string
+    {
+        return $this->smtp_from_name
+            ?? $this->nome_fantasia
+            ?? config('mail.from.name');
     }
 }

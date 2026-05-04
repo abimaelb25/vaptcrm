@@ -11,18 +11,25 @@ namespace App\Http\Controllers\SaaS;
 */
 
 use App\Http\Controllers\Controller;
+use App\Models\Loja;
 use App\Models\SaaS\Plano;
-use App\Models\Produto;
-use App\Models\Usuario;
+use App\Models\SaaS\Assinatura;
+use App\Models\SaaS\PagamentoSaaS;
+use App\Services\SaaS\CommercialSubscriptionService;
+use App\Services\SaaS\PlanService;
 use App\Services\SaaS\SaaSService;
 use App\Services\StripeService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AssinaturaController extends Controller
 {
     public function __construct(
         protected SaaSService $saasService,
-        protected StripeService $stripeService
+        protected PlanService $planService,
+        protected StripeService $stripeService,
+        protected CommercialSubscriptionService $commercialSubscriptionService,
     ) {}
 
     /**
@@ -32,26 +39,77 @@ class AssinaturaController extends Controller
     {
         $assinatura = $this->saasService->getAssinatura();
         $planos = Plano::where('ativo', true)->orderBy('preco_mensal')->get();
-        
-        // Métricas atuais vs Limites
-        $uso = [
-            'produtos' => [
-                'atual' => Produto::where('ativo', true)->count(),
-                'limite' => $assinatura->plano->limite_produtos,
-                'porcentagem' => $assinatura->plano->temLimiteProdutos() 
-                    ? min(100, (Produto::where('ativo', true)->count() / $assinatura->plano->limite_produtos) * 100)
-                    : 0
-            ],
-            'funcionarios' => [
-                'atual' => Usuario::where('ativo', true)->count(),
-                'limite' => $assinatura->plano->limite_funcionarios,
-                'porcentagem' => $assinatura->plano->temLimiteFuncionarios()
-                    ? min(100, (Usuario::where('ativo', true)->count() / $assinatura->plano->limite_funcionarios) * 100)
-                    : 0
-            ]
+
+        $snapshots = $this->planService->usageDashboard();
+        $usage = [
+            'produtos' => $snapshots['produtos'],
+            'funcionarios' => $snapshots['usuarios'],
+            'pedidos_mes' => $snapshots['pedidos_mes'],
+            'storage_mb' => $snapshots['storage_mb'],
+            'storage_policy' => $snapshots['storage_policy'],
         ];
 
-        return view('painel.assinatura.index', compact('assinatura', 'planos', 'uso'));
+        $pagamentos = PagamentoSaaS::query()
+            ->where('loja_id', Auth::user()?->loja_id)
+            ->latest('vencimento_em')
+            ->take(10)
+            ->get();
+
+        $alerts = collect([
+            $usage['storage_policy']['message'] ?? null,
+            ($usage['produtos']['percent'] ?? 0) >= 90 ? 'Você está perto do limite de produtos. Faça upgrade para continuar crescendo.' : null,
+            ($usage['funcionarios']['percent'] ?? 0) >= 90 ? 'Sua equipe está no limite do plano. Considere upgrade para adicionar novos usuários.' : null,
+            ($usage['pedidos_mes']['percent'] ?? 0) >= 90 ? 'Seu volume mensal de pedidos está próximo do teto do plano.' : null,
+        ])->filter()->values()->all();
+
+        $upgradeRecommended = ! empty($alerts);
+
+        return view('painel.assinatura.index', compact('assinatura', 'planos', 'usage', 'alerts', 'upgradeRecommended', 'pagamentos'));
+    }
+
+    public function previewDowngrade(Plano $plano)
+    {
+        $loja = Loja::query()->findOrFail(Auth::user()->loja_id);
+        $check = $this->commercialSubscriptionService->validateDowngrade($loja, $plano);
+
+        return response()->json([
+            'success' => true,
+            'allowed' => $check['allowed'],
+            'violations' => $check['violations'],
+        ]);
+    }
+
+    public function changePlan(Request $request, Plano $plano): RedirectResponse
+    {
+        $request->validate([
+            'billing_cycle' => 'required|in:monthly,yearly',
+            'strict_downgrade' => 'nullable|boolean',
+        ]);
+
+        $loja = Loja::query()->findOrFail(Auth::user()->loja_id);
+
+        $result = $this->commercialSubscriptionService->changePlan(
+            $loja,
+            $plano,
+            (string) $request->input('billing_cycle', Assinatura::BILLING_MONTHLY),
+            (bool) $request->boolean('strict_downgrade', false)
+        );
+
+        $violations = $result['violations'];
+        $prorata = $result['prorata'];
+
+        if ($violations !== []) {
+            return redirect()
+                ->route('admin.billing.index')
+                ->with('warning', 'Plano alterado com ajuste pendente. Reduza o consumo para se adequar aos novos limites.');
+        }
+
+        $msg = 'Plano alterado com sucesso.';
+        if ($prorata > 0) {
+            $msg .= ' Pró-rata gerado: R$ ' . number_format($prorata, 2, ',', '.');
+        }
+
+        return redirect()->route('admin.billing.index')->with('success', $msg);
     }
 
     /**

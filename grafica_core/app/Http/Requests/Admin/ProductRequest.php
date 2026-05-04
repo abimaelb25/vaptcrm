@@ -100,6 +100,36 @@ class ProductRequest extends FormRequest
             'grupos_variacao.*.opcoes.*.acrescimo_preco' => ['required', 'numeric'],
             'grupos_variacao.*.opcoes.*.acrescimo_custo' => ['nullable', 'numeric'],
             'grupos_variacao.*.opcoes.*.acrescimo_prazo' => ['nullable', 'integer'],
+
+            // Etapas de Produção (Pivot)
+            'etapas_producao'                          => ['nullable', 'array'],
+            'etapas_producao.*.production_step_id'     => ['required', 'integer', 'exists:production_steps,id'],
+            'etapas_producao.*.ordem'                  => ['required', 'integer', 'min:0'],
+            'etapas_producao.*.tempo_estimado_minutos' => ['nullable', 'integer', 'min:0'],
+            'etapas_producao.*.obrigatorio'            => ['nullable', 'boolean'],
+
+            // Ficha Técnica (Precificação Dinâmica)
+            'ficha_tecnica'                                  => ['nullable', 'array'],
+            'ficha_tecnica.tempo_producao_min'               => ['nullable', 'integer', 'min:0'],
+            'ficha_tecnica.quantidade_base'                  => ['nullable', 'integer', 'min:1'],
+            'ficha_tecnica.perda_percentual'                 => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'ficha_tecnica.insumos'                          => ['nullable', 'array'],
+            'ficha_tecnica.insumos.*.insumo_id'              => [
+                'required', 'integer', 
+                \Illuminate\Validation\Rule::exists('insumos', 'id')->where(function ($query) {
+                    $query->where('loja_id', auth()->user()->loja_id);
+                })
+            ],
+            'ficha_tecnica.insumos.*.quantidade'             => ['required', 'numeric', 'min:0'],
+            'ficha_tecnica.insumos.*.fator_perda'            => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'ficha_tecnica.servicos'                         => ['nullable', 'array'],
+            'ficha_tecnica.servicos.*.servico_producao_id'   => [
+                'required', 'integer', 
+                \Illuminate\Validation\Rule::exists('servicos_producao', 'id')->where(function ($query) {
+                    $query->where('loja_id', auth()->user()->loja_id);
+                })
+            ],
+            'ficha_tecnica.servicos.*.quantidade'            => ['required', 'numeric', 'min:0'],
         ];
     }
 

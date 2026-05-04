@@ -20,6 +20,8 @@ use App\Models\Categoria;
 use App\Models\MovimentacaoFinanceira;
 use App\Models\SiteConfiguracao;
 use App\Services\Domain\OrderService;
+use App\Services\Domain\FinanceService;
+use App\Services\SaaS\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +32,9 @@ use Illuminate\View\View;
 class PDVController extends Controller
 {
     public function __construct(
-        protected OrderService $orderService
+        protected OrderService $orderService,
+        protected FinanceService $financeService,
+        protected TenantContext $tenantContext,
     ) {}
 
     /**
@@ -38,6 +42,7 @@ class PDVController extends Controller
      */
     public function index(): View
     {
+        $this->authorize('create', Pedido::class);
         $categorias = Categoria::where('ativo', true)->orderBy('ordem_exibicao')->get(['id', 'nome']);
         
         // Dados para PIX BR Code
@@ -80,6 +85,7 @@ class PDVController extends Controller
 
     /**
      * Verifica status do caixa via AJAX.
+     * Protegido pelo middleware perfil:administrador,gerente na rota.
      */
     public function statusCaixa(): JsonResponse
     {
@@ -92,6 +98,7 @@ class PDVController extends Controller
 
     /**
      * Abre o caixa com valor inicial.
+     * Protegido pelo middleware perfil:administrador,gerente na rota.
      */
     public function abrirCaixa(Request $request): JsonResponse
     {
@@ -125,6 +132,7 @@ class PDVController extends Controller
 
     /**
      * Fecha o caixa calculando totais.
+     * Protegido pelo middleware perfil:administrador,gerente na rota.
      */
     public function fecharCaixa(Request $request): JsonResponse
     {
@@ -166,37 +174,184 @@ class PDVController extends Controller
     }
 
     /**
-     * Busca AJAX de clientes com debounce server-side.
+     * Busca AJAX de clientes — pré-carrega todos ou filtra por termo.
+     * Retorna clientes da loja logada com contagem de pedidos para identificar frequentes.
      */
     public function buscarClientes(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Cliente::class);
         $term = trim((string) $request->query('q', ''));
 
-        if (mb_strlen($term) < 2) {
-            return response()->json([]);
-        }
+        $query = Cliente::query()
+            ->where('status', 'ativo')
+            ->select(['id', 'nome', 'whatsapp', 'email', 'cpf_cnpj', 'cidade', 'empresa', 'tipo_pessoa'])
+            ->withCount('pedidos');
 
-        $clientes = Cliente::query()
-            ->where(function ($q) use ($term) {
-                // Remove caracteres não numéricos para busca por WhatsApp/CPF
+        if (mb_strlen($term) >= 2) {
+            $query->where(function ($q) use ($term) {
                 $onlyNumbers = preg_replace('/\D/', '', $term);
-                
+
                 $q->where('nome', 'like', "%{$term}%")
-                  ->orWhere('whatsapp', 'like', "%{$term}%");
+                  ->orWhere('whatsapp', 'like', "%{$term}%")
+                  ->orWhere('empresa', 'like', "%{$term}%");
 
                 if (!empty($onlyNumbers)) {
                     $q->orWhere('whatsapp', 'like', "%{$onlyNumbers}%")
+                      ->orWhere('telefone', 'like', "%{$onlyNumbers}%")
                       ->orWhere('cpf_cnpj', 'like', "%{$onlyNumbers}%");
                 }
 
                 $q->orWhere('email', 'like', "%{$term}%");
-            })
-            ->where('status', 'ativo')
+            });
+        }
+
+        $clientes = $query
+            ->orderByDesc('pedidos_count')
             ->orderBy('nome')
-            ->limit(12)
-            ->get(['id', 'nome', 'whatsapp', 'email', 'cpf_cnpj']);
+            ->limit(50)
+            ->get()
+            ->map(function ($cliente) {
+                $cliente->is_frequente = $cliente->pedidos_count >= 3;
+                return $cliente;
+            });
 
         return response()->json($clientes);
+    }
+
+    /**
+     * Busca AJAX de pedidos ativos — para consulta rápida de status no balcão.
+     * Filtra por nome/whatsapp/cpf_cnpj do cliente ou número do pedido.
+     */
+    public function buscarPedidos(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Pedido::class);
+        $term = trim((string) $request->query('q', ''));
+        $incluirFinalizados = $request->boolean('incluir_finalizados', false);
+
+        // Status considerados "ativos" para atendimento de balcão
+        $statusAtivos = [
+            Pedido::STATUS_RASCUNHO,
+            Pedido::STATUS_AGUARDANDO,
+            Pedido::STATUS_APROVADO,
+            Pedido::STATUS_EM_PRODUCAO,
+            Pedido::STATUS_PRONTO,
+            Pedido::STATUS_EM_TRANSPORTE,
+            Pedido::STATUS_AGUARDANDO_PAGAMENTO,
+        ];
+
+        $query = Pedido::query()
+            ->with(['cliente:id,nome,whatsapp,cpf_cnpj', 'atendente:id,nome'])
+            ->select([
+                'id', 'numero', 'numero_sequencial', 'codigo_pedido', 'numero_acompanhamento', 
+                'cliente_id', 'status', 'total', 'prazo_entrega', 'observacoes', 'atendente_id', 'created_at'
+            ]);
+
+        // Filtrar por status ativos (a menos que peça finalizados)
+        if (!$incluirFinalizados) {
+            $query->whereIn('status', $statusAtivos);
+        } else {
+            // Mesmo incluindo finalizados, não traz cancelados por padrão
+            $query->where('status', '!=', Pedido::STATUS_CANCELADO);
+        }
+
+        if (mb_strlen($term) >= 1) {
+            $onlyNumbers = preg_replace('/\D/', '', $term);
+
+            $query->where(function ($q) use ($term, $onlyNumbers) {
+                // Prioridade 1: Busca exata por número sequencial (PDV)
+                if (is_numeric($term)) {
+                    $q->where('numero_sequencial', (int) $term);
+                }
+
+                // Prioridade 2: Busca por código do pedido
+                $q->orWhere('codigo_pedido', 'like', "%{$term}%");
+
+                // Busca por número legado e acompanhamento
+                $q->orWhere('numero', 'like', "%{$term}%")
+                  ->orWhere('numero_acompanhamento', 'like', "%{$term}%");
+
+                // Busca por dados do cliente
+                $q->orWhereHas('cliente', function ($cq) use ($term, $onlyNumbers) {
+                    $cq->where('nome', 'like', "%{$term}%");
+
+                    if (!empty($onlyNumbers)) {
+                        $cq->orWhere('whatsapp', 'like', "%{$onlyNumbers}%")
+                           ->orWhere('telefone', 'like', "%{$onlyNumbers}%")
+                           ->orWhere('cpf_cnpj', 'like', "%{$onlyNumbers}%");
+                    }
+                });
+            });
+        }
+
+        $pedidos = $query
+            ->orderByDesc('created_at')
+            ->limit(30)
+            ->get()
+            ->map(function ($pedido) {
+                return [
+                    'id' => $pedido->id,
+                    'numero' => $pedido->numero,
+                    'numero_sequencial' => $pedido->numero_sequencial,
+                    'codigo_pedido' => $pedido->codigo_pedido,
+                    'numero_balcao' => $pedido->numero_balcao,
+                    'codigo_acompanhamento' => $pedido->numero_acompanhamento,
+                    'status' => $pedido->status,
+                    'status_label' => $this->getStatusLabel($pedido->status),
+                    'status_cor' => $this->getStatusCor($pedido->status),
+                    'total' => (float) $pedido->total,
+                    'prazo_entrega' => $pedido->prazo_entrega?->format('d/m/Y'),
+                    'observacoes' => $pedido->observacoes,
+                    'data_pedido' => $pedido->created_at->format('d/m/Y H:i'),
+                    'data_relativa' => $pedido->created_at->diffForHumans(),
+                    'cliente' => $pedido->cliente ? [
+                        'id' => $pedido->cliente->id,
+                        'nome' => $pedido->cliente->nome,
+                        'whatsapp' => $pedido->cliente->whatsapp,
+                        'cpf_cnpj' => $pedido->cliente->cpf_cnpj,
+                    ] : null,
+                    'atendente' => $pedido->atendente?->nome,
+                ];
+            });
+
+        return response()->json($pedidos);
+    }
+
+    /**
+     * Retorna label amigável para status do pedido.
+     */
+    private function getStatusLabel(string $status): string
+    {
+        return match ($status) {
+            Pedido::STATUS_RASCUNHO => 'Rascunho',
+            Pedido::STATUS_AGUARDANDO => 'Aguardando Aprovação',
+            Pedido::STATUS_APROVADO => 'Aprovado',
+            Pedido::STATUS_EM_PRODUCAO => 'Em Produção',
+            Pedido::STATUS_PRONTO => 'Pronto',
+            Pedido::STATUS_EM_TRANSPORTE => 'Em Transporte',
+            Pedido::STATUS_ENTREGUE => 'Entregue',
+            Pedido::STATUS_CANCELADO => 'Cancelado',
+            Pedido::STATUS_AGUARDANDO_PAGAMENTO => 'Aguardando Pagamento',
+            default => ucfirst(str_replace('_', ' ', $status)),
+        };
+    }
+
+    /**
+     * Retorna cor de badge para status do pedido.
+     */
+    private function getStatusCor(string $status): string
+    {
+        return match ($status) {
+            Pedido::STATUS_RASCUNHO => 'slate',
+            Pedido::STATUS_AGUARDANDO => 'amber',
+            Pedido::STATUS_APROVADO => 'blue',
+            Pedido::STATUS_EM_PRODUCAO => 'indigo',
+            Pedido::STATUS_PRONTO => 'emerald',
+            Pedido::STATUS_EM_TRANSPORTE => 'cyan',
+            Pedido::STATUS_ENTREGUE => 'green',
+            Pedido::STATUS_CANCELADO => 'red',
+            Pedido::STATUS_AGUARDANDO_PAGAMENTO => 'orange',
+            default => 'gray',
+        };
     }
 
     /**
@@ -204,6 +359,7 @@ class PDVController extends Controller
      */
     public function buscarProdutos(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Produto::class);
         try {
             $term = trim((string) $request->query('q', ''));
 
@@ -211,7 +367,7 @@ class PDVController extends Controller
                 ->where('ativo', true)
                 ->select(['id', 'nome', 'preco_base', 'prazo_estimado', 'imagem_principal', 'categoria_id']);
 
-            if (mb_strlen($term) >= 2) {
+            if (mb_strlen($term) >= 3) {
                 $query->where(function ($q) use ($term) {
                     $q->where('nome', 'like', "%{$term}%")
                       ->orWhere('slug', 'like', "%{$term}%");
@@ -240,6 +396,8 @@ class PDVController extends Controller
      */
     public function clienteRapido(Request $request): JsonResponse
     {
+        $this->authorize('create', Cliente::class);
+
         try {
             $validated = $request->validate([
                 'nome' => 'required|string|max:255',
@@ -247,9 +405,14 @@ class PDVController extends Controller
                 'email' => 'nullable|email|max:255',
             ]);
 
+            // loja_id explícito: HasTenancy cobre o create(), mas tornamos explícito
+            // para garantir consistência mesmo em contextos sem global scope ativo
+            $lojaId = $this->tenantContext->getLojaId() ?? auth()->user()->loja_id;
+
             $cliente = Cliente::create(array_merge($validated, [
-                'status' => 'ativo',
-                'origem_lead' => 'pdv'
+                'status'      => 'ativo',
+                'origem_lead' => 'pdv',
+                'loja_id'     => $lojaId,
             ]));
 
             return response()->json([
@@ -266,11 +429,13 @@ class PDVController extends Controller
      */
     public function produtoRapido(Request $request): JsonResponse
     {
+        $this->authorize('create', Produto::class);
+
         try {
             $validated = $request->validate([
-                'nome' => 'required|string|max:255',
-                'preco' => 'required|numeric|min:0',
-                'tipo' => 'required|in:produto,servico',
+                'nome'         => 'required|string|max:255',
+                'preco'        => 'required|numeric|min:0',
+                'tipo'         => 'required|in:produto,servico',
                 'categoria_id' => 'nullable|exists:categorias,id',
             ]);
 
@@ -281,15 +446,19 @@ class PDVController extends Controller
                 $categoriaNome = Categoria::find($validated['categoria_id'])->nome ?? 'Diversos';
             }
 
+            // loja_id explícito para garantir isolamento de tenant
+            $lojaId = $this->tenantContext->getLojaId() ?? auth()->user()->loja_id;
+
             $produto = Produto::create([
-                'nome' => $validated['nome'],
-                'slug' => $slug,
-                'preco_base' => $validated['preco'],
-                'categoria_id' => $validated['categoria_id'] ?? null,
-                'categoria' => $categoriaNome,
+                'nome'            => $validated['nome'],
+                'slug'            => $slug,
+                'preco_base'      => $validated['preco'],
+                'categoria_id'    => $validated['categoria_id'] ?? null,
+                'categoria'       => $categoriaNome,
                 'descricao_curta' => "Cadastro rápido via PDV ({$validated['tipo']})",
-                'ativo' => true,
-                'visibilidade' => 'interno'
+                'ativo'           => true,
+                'visibilidade'    => 'interno',
+                'loja_id'         => $lojaId,
             ]);
 
             return response()->json([
@@ -306,6 +475,8 @@ class PDVController extends Controller
      */
     public function finalizar(Request $request): JsonResponse
     {
+        $this->authorize('create', Pedido::class);
+
         try {
             return DB::transaction(function () use ($request) {
                 $userId = auth()->id();
@@ -353,12 +524,40 @@ class PDVController extends Controller
                     'observacoes_cliente'   => $request->input('observacao_geral', ''),
                 ]);
 
-                // 4. Registrar Pagamentos
+                // 4. Registrar Pagamentos via FinanceService (integração com Títulos Financeiros)
                 $pagamentos = $request->input('pagamentos', []);
+                
+                // Buscar título financeiro criado pelo OrderService (se existir)
+                $titulo = \App\Models\FinancialTitle::where('origem', 'pedido')
+                    ->where('referencia_id', $pedido->id)
+                    ->first();
+                
                 foreach ($pagamentos as $pg) {
                     $metodo = $pg['metodo'];
                     $valor = (float) $pg['valor'];
 
+                    // Montar payload_original com dados específicos do método
+                    $payloadOriginal = ['origem' => 'pdv_manual'];
+
+                    // Se for cartão (crédito ou débito), incluir dados adicionais
+                    if (isset($pg['card_data']) && is_array($pg['card_data'])) {
+                        $cardData = $pg['card_data'];
+                        $payloadOriginal = [
+                            'origem'              => 'pdv_cartao_manual',
+                            'bandeira'            => $cardData['bandeira'] ?? null,
+                            'parcelas'            => (int) ($cardData['parcelas'] ?? 1),
+                            'nsu'                 => $cardData['nsu'] ?? null,
+                            'codigo_autorizacao'  => $cardData['codigo_autorizacao'] ?? null,
+                            'terminal_id'         => $cardData['terminal_id'] ?? null,
+                            'observacao'          => $cardData['observacao'] ?? null,
+                            'operador_confirmou'  => (bool) ($cardData['operador_confirmou'] ?? false),
+                            'integration_status'  => 'manual',
+                            'payment_channel'     => 'pos_terminal',
+                            'captured_at'         => now()->toIso8601String(),
+                        ];
+                    }
+
+                    // Registrar na tabela de pagamentos (compatibilidade Stripe/Asaas)
                     Pagamento::create([
                         'pedido_id'     => $pedido->id,
                         'tipo_cobranca' => 'presencial',
@@ -366,22 +565,35 @@ class PDVController extends Controller
                         'metodo'        => $metodo,
                         'valor'         => $valor,
                         'status'        => 'pago',
-                        'payload_original' => ['origem' => 'pdv_manual']
+                        'payload_original' => $payloadOriginal
                     ]);
 
-                    // Registrar no financeiro
-                    MovimentacaoFinanceira::create([
-                        'tipo'              => MovimentacaoFinanceira::TIPO_ENTRADA,
-                        'categoria'         => 'Venda PDV',
-                        'valor'             => $valor,
-                        'data_movimentacao' => now(),
-                        'forma_pagamento'   => $metodo,
-                        'status'            => MovimentacaoFinanceira::STATUS_PAGO,
-                        'pedido_id'         => $pedido->id,
-                        'usuario_id'        => $userId,
-                        'caixa_id'          => $caixa->id,
-                        'descricao'         => "Recebimento PDV - Pedido #{$pedido->numero} ({$metodo})",
-                    ]);
+                    // Registrar pagamento via FinanceService (atualiza FinancialTitle + MovimentacaoFinanceira)
+                    if ($titulo) {
+                        $this->financeService->addPayment($titulo, [
+                            'valor'           => $valor,
+                            'forma_pagamento' => $metodo,
+                            'data_pagamento'  => now(),
+                            'caixa_id'        => $caixa->id,
+                            'usuario_id'      => $userId,
+                            'descricao'       => "Recebimento PDV - Pedido #{$pedido->numero} ({$metodo})",
+                        ]);
+                    } else {
+                        // Fallback: se não existe título, criar MovimentacaoFinanceira diretamente
+                        // Isso pode acontecer em pedidos antigos ou cenários especiais
+                        MovimentacaoFinanceira::create([
+                            'tipo'              => MovimentacaoFinanceira::TIPO_ENTRADA,
+                            'categoria'         => 'Venda PDV',
+                            'valor'             => $valor,
+                            'data_movimentacao' => now(),
+                            'forma_pagamento'   => $metodo,
+                            'status'            => MovimentacaoFinanceira::STATUS_PAGO,
+                            'pedido_id'         => $pedido->id,
+                            'usuario_id'        => $userId,
+                            'caixa_id'          => $caixa->id,
+                            'descricao'         => "Recebimento PDV - Pedido #{$pedido->numero} ({$metodo})",
+                        ]);
+                    }
                 }
 
                 return response()->json([
@@ -402,9 +614,12 @@ class PDVController extends Controller
 
     /**
      * Gera visualização da Ordem de Serviço para impressão.
+     * O route model binding resolve Pedido pelo ID; authorize('view') garante
+     * que apenas usuários do mesmo tenant acessem a OS.
      */
     public function gerarOS(Pedido $pedido): View
     {
+        $this->authorize('view', $pedido);
         $pedido->load(['cliente', 'atendente', 'itens.produto', 'pagamentos']);
 
         $config = [

@@ -13,6 +13,9 @@
             <p class="text-slate-500 mt-1 font-medium">Gestão profissional do quadro de funcionários e acessos ao sistema</p>
         </div>
         <div class="flex gap-2">
+            <a href="{{ route('admin.system.equipe.treinamentos.index') }}" class="btn bg-white border border-slate-200 text-slate-700 rounded-xl px-6 py-3 font-bold shadow-sm hover:-translate-y-1 transition-all flex items-center gap-2">
+                <i class="fas fa-graduation-cap"></i> Treinamentos
+            </a>
             <a href="{{ route('admin.system.equipe.create') }}" class="btn bg-brand-primary text-white rounded-xl px-6 py-3 font-bold shadow-lg shadow-brand-primary/20 hover:-translate-y-1 transition-all flex items-center gap-2">
                 <i class="fas fa-user-plus"></i> Novo Colaborador
             </a>
@@ -80,7 +83,7 @@
                                 <div class="text-[11px] text-slate-400">{{ $f->setor ?: 'Geral' }}</div>
                             </td>
                             <td class="px-6 py-4">
-                                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tight">
+                                <span class="inline-flex items-center border border-slate-200 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-tight">
                                     {{ $f->tipo_vinculo ?: 'N/A' }}
                                 </span>
                                 @if($f->data_admissao)
@@ -98,7 +101,7 @@
                                     ];
                                     $color = $statusColors[$f->status_funcional] ?? 'bg-slate-100 text-slate-700 border-slate-200';
                                 @endphp
-                                <span class="{{ $color }} border px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">{{ $f->status_funcional }}</span>
+                                <span class="{{ $color }} border px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">{{ $f->status_funcional }}</span>
                             </td>
                             <td class="px-6 py-4 text-center">
                                 @if($f->user_id)
@@ -118,21 +121,37 @@
                                     <span class="text-[10px] font-bold text-slate-300 italic">Sem Acesso</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-right">
-                                <div class="flex justify-end gap-1">
-                                    <a href="{{ route('admin.system.equipe.show', $f->id) }}" class="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-brand-secondary hover:text-white transition-all shadow-sm" title="Ficha Completa & RH">
-                                        <i class="fas fa-file-contract"></i>
-                                    </a>
-                                    <a href="{{ route('admin.system.equipe.edit', $f->id) }}" class="p-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-brand-primary hover:text-white transition-all shadow-sm" title="Editar Cadastro">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center justify-end gap-3">
+                                    <x-action-card-button 
+                                        icon="file-contract" 
+                                        label="Ver Ficha"
+                                        href="{{ route('admin.system.equipe.show', $f->id) }}"
+                                        color="blue"
+                                        title="Visualizar ficha completa de {{ $f->nome_completo }}" />
+                                    
+                                    <x-action-card-button 
+                                        icon="edit" 
+                                        label="Editar"
+                                        href="{{ route('admin.system.equipe.edit', $f->id) }}"
+                                        color="amber"
+                                        title="Editar cadastro de {{ $f->nome_completo }}" />
+                                    
                                     @if($f->user_id !== auth()->id())
-                                    <form action="{{ route('admin.system.equipe.destroy', $f->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Deseja realmente remover este colaborador do quadro ativo? O acesso ao sistema também será revogado.');">
-                                        @csrf @method('DELETE')
-                                        <button class="p-2 rounded-lg bg-slate-100 text-rose-400 hover:bg-rose-500 hover:text-white transition-all shadow-sm">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
+                                        <x-action-card-button 
+                                            icon="trash" 
+                                            label="Excluir"
+                                            color="red"
+                                            isForm="true"
+                                            formAction="{{ route('admin.system.equipe.destroy', $f->id) }}"
+                                            formMethod="DELETE"
+                                            formConfirm="Deseja realmente remover este colaborador do quadro ativo? O acesso ao sistema também será revogado."
+                                            title="Excluir colaborador {{ $f->nome_completo }}" />
+                                    @else
+                                        <span class="inline-flex flex-col items-center justify-center gap-2 px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 text-slate-500 opacity-50 shadow-sm text-center">
+                                            <i class="fas fa-lock text-lg font-black text-slate-400"></i>
+                                            <span class="text-xs font-bold whitespace-nowrap">Você</span>
+                                        </span>
                                     @endif
                                 </div>
                             </td>
@@ -165,7 +184,7 @@
             </div>
             <div>
                 <p class="text-xs font-black text-slate-400 uppercase">Colaboradores Ativos</p>
-                <p class="text-2xl font-black text-slate-800">{{ $funcionarios->total() }}</p>
+                <p class="text-2xl font-black text-slate-800">{{ $totalAtivos ?? $funcionarios->total() }}</p>
             </div>
         </div>
         <div class="rounded-3xl bg-white border border-slate-200 p-6 flex items-center gap-5 shadow-sm">
@@ -174,7 +193,7 @@
             </div>
             <div>
                 <p class="text-xs font-black text-slate-400 uppercase">Em Férias / Programado</p>
-                <p class="text-2xl font-black text-slate-800">0</p>
+                <p class="text-2xl font-black text-slate-800">{{ $totalFerias ?? 0 }}</p>
             </div>
         </div>
         <div class="rounded-3xl bg-white border border-slate-200 p-6 flex items-center gap-5 shadow-sm">
@@ -183,7 +202,7 @@
             </div>
             <div>
                 <p class="text-xs font-black text-slate-400 uppercase">Licenças de Acesso</p>
-                <p class="text-2xl font-black text-slate-800">{{ $funcionarios->where('user_id', '!=', null)->count() }}</p>
+                <p class="text-2xl font-black text-slate-800">{{ $licencasEmUso ?? 0 }}</p>
             </div>
         </div>
     </div>

@@ -114,13 +114,39 @@
 
                     <!-- Pedidos -->
                     <div>
-                        <div class="flex justify-between items-center mb-1 text-sm">
-                            <span class="font-medium text-gray-700">Pedidos Totais</span>
-                            <span class="text-gray-900 font-bold">{{ $totalPedidos }}</span>
+                         <div class="flex justify-between items-center mb-1 text-sm">
+                             <span class="font-medium text-gray-700">Pedidos Totais</span>
+                             <span class="text-gray-900 font-bold">{{ $totalPedidos }}</span>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+
+             <!-- Card: Controle Administrativo -->
+             <div class="bg-indigo-50 border border-indigo-100 rounded-xl shadow-sm overflow-hidden">
+                <div class="px-6 py-5 border-b border-indigo-100 bg-indigo-100/50 flex justify-between items-center">
+                    <h3 class="text-base font-semibold text-indigo-900"><i class="fas fa-tools mr-2"></i>Controle Admin</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    @if($loja->limitesDesbloqueados())
+                        <div class="bg-green-100 text-green-700 p-3 rounded-lg text-xs font-bold border border-green-200 mb-2">
+                            <i class="fas fa-check-circle mr-1"></i> LIMITES DESBLOQUEADOS ATÉ {{ $loja->limites_desbloqueados_ate->format('d/m/Y') }}
                         </div>
+                    @endif
+
+                    <div class="flex flex-col gap-3">
+                        <!-- Botão Renovar Trial -->
+                        <button onclick="document.getElementById('modal-trial').classList.remove('hidden')" class="w-full inline-flex justify-center items-center px-4 py-2 bg-white border border-indigo-200 text-indigo-700 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
+                            <i class="fas fa-redo-alt mr-2"></i> Restabelecer Trial
+                        </button>
+
+                        <!-- Botão Desbloquear Limites -->
+                        <button onclick="document.getElementById('modal-limites').classList.remove('hidden')" class="w-full inline-flex justify-center items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md">
+                            <i class="fas fa-unlock-alt mr-2"></i> Desbloquear Limites
+                        </button>
                     </div>
                 </div>
-            </div>
+             </div>
         </div>
 
         <!-- Right Column: Tabs -->
@@ -293,6 +319,67 @@
                         <button type="button" onclick="document.getElementById('modal-bloqueio').classList.add('hidden')" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                             Cancelar
                         </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Trial -->
+    <div id="modal-trial" class="hidden fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-indigo-900/60 backdrop-blur-sm transition-opacity" onclick="document.getElementById('modal-trial').classList.add('hidden')"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full animate-in zoom-in duration-200">
+                <form action="{{ route('superadmin.lojas.renovar_trial', $loja->id) }}" method="POST">
+                    @csrf
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Restabelecer Período Trial</h3>
+                    <p class="text-sm text-gray-500 mb-6">A assinatura atual voltará ao status de <strong>trial</strong> e a data de expiração será estendida.</p>
+                    
+                    <div class="mb-6">
+                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Dias de Trial a somar (hoje + X)</label>
+                        <select name="dias" class="w-full border-gray-200 rounded-xl p-3 bg-gray-50 focus:ring-indigo-500 border">
+                            <option value="7">7 Dias</option>
+                            <option value="15" selected>15 Dias</option>
+                            <option value="30">30 Dias</option>
+                            <option value="60">60 Dias</option>
+                        </select>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button type="button" onclick="document.getElementById('modal-trial').classList.add('hidden')" class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm">Cancelar</button>
+                        <button type="submit" class="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-600/20">Confirmar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Desbloqueio de Limites -->
+    <div id="modal-limites" class="hidden fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-indigo-900/60 backdrop-blur-sm transition-opacity" onclick="document.getElementById('modal-limites').classList.add('hidden')"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full animate-in zoom-in duration-200 border-2 border-indigo-100">
+                <form action="{{ route('superadmin.lojas.desbloquear_limites', $loja->id) }}" method="POST">
+                    @csrf
+                    <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mb-4">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Bypass de Limites SaaS</h3>
+                    <p class="text-sm text-gray-500 mb-6">Isso desbloqueará todos os limites de produtos e funcionários, independente da assinatura ativa.</p>
+                    
+                    <div class="mb-6">
+                        <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Prazo do Desbloqueio</label>
+                        <select name="dias" class="w-full border-gray-200 rounded-xl p-3 bg-gray-50 focus:ring-indigo-500 border">
+                            <option value="2">2 Dias (Urgência)</option>
+                            <option value="7" selected>7 Dias (Padrão)</option>
+                            <option value="15">15 Dias</option>
+                            <option value="30">30 Dias</option>
+                        </select>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button type="button" onclick="document.getElementById('modal-limites').classList.add('hidden')" class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm">Cancelar</button>
+                        <button type="submit" class="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-600/20 uppercase tracking-wider">Desbloquear Agora</button>
                     </div>
                 </form>
             </div>

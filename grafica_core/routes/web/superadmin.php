@@ -19,6 +19,8 @@ Route::middleware(['auth', 'super_admin'])
         Route::resource('lojas', SuperAdminLojasController::class)->only(['index', 'show']);
         Route::post('lojas/{loja}/bloquear', [SuperAdminLojasController::class, 'bloquear'])->name('lojas.bloquear');
         Route::post('lojas/{loja}/desbloquear', [SuperAdminLojasController::class, 'desbloquear'])->name('lojas.desbloquear');
+        Route::post('lojas/{loja}/renovar-trial', [SuperAdminLojasController::class, 'renovarTrial'])->name('lojas.renovar_trial');
+        Route::post('lojas/{loja}/desbloquear-limites', [SuperAdminLojasController::class, 'desbloquearLimites'])->name('lojas.desbloquear_limites');
         Route::resource('planos', SuperAdminPlanosController::class);
         Route::resource('assinaturas', SuperAdminAssinaturasController::class)->only(['index', 'show']);
 
@@ -30,6 +32,12 @@ Route::middleware(['auth', 'super_admin'])
             Route::resource('categorias', \App\Http\Controllers\SuperAdmin\Support\SupportCategoryController::class);
             Route::resource('tickets', \App\Http\Controllers\SuperAdmin\Support\SupportTicketController::class);
             Route::post('tickets/{ticket}/reply', [\App\Http\Controllers\SuperAdmin\Support\SupportTicketController::class, 'reply'])->name('tickets.reply');
+            Route::resource('academy-trilhas', \App\Http\Controllers\SuperAdmin\Support\AcademyTrackController::class)
+                ->parameters(['academy-trilhas' => 'academyTrilha'])
+                ->except(['show', 'create', 'edit']);
+            Route::resource('academy-cursos', \App\Http\Controllers\SuperAdmin\Support\AcademyCourseController::class)
+                ->parameters(['academy-cursos' => 'academyCurso'])
+                ->except(['show', 'create', 'edit']);
             Route::resource('central-de-ajuda', \App\Http\Controllers\SuperAdmin\Support\HelpContentController::class)->parameters([
                 'central-de-ajuda' => 'help_content',
             ]);

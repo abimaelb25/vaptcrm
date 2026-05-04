@@ -13,6 +13,7 @@ namespace App\Services\Domain;
 use App\Models\Produto;
 use App\Models\Categoria;
 use App\Models\ProdutoImagem;
+use App\Models\ProdutoEtapaProducao;
 use App\Services\Core\MediaService;
 use App\Services\AuditLogService;
 use Illuminate\Support\Facades\DB;
@@ -38,7 +39,7 @@ class CatalogService
             // Remove arrays de relacionamento para salvar o modelo base
             $toUnset = [
                 'variacoes', 'grupos_variacao', 'materiais', 'acabamentos', 
-                'faixas', 'imagem_destaque', 'imagens_adicionais'
+                'faixas', 'imagem_destaque', 'imagens_adicionais', 'etapas_producao'
             ];
             foreach ($toUnset as $key) unset($productData[$key]);
 
@@ -137,6 +138,11 @@ class CatalogService
                 }
             }
 
+            // 7. Sincronização de Etapas de Produção
+            if (isset($data['etapas_producao'])) {
+                $this->syncEtapasProducao($product, $data['etapas_producao']);
+            }
+
             // 6. Processamento de Imagens
             $this->processProductImages($product, $data);
 
@@ -183,6 +189,32 @@ class CatalogService
                     'ordem' => $orderBase + $index + 1,
                 ]);
             }
+        }
+    }
+
+    /**
+     * Sincroniza as etapas de produção específicas do produto.
+     * Executado dentro da transação do saveProduct().
+     */
+    private function syncEtapasProducao(Produto $product, array $etapas): void
+    {
+        // Remove todas as etapas existentes
+        $product->etapasProducao()->delete();
+
+        // Insere apenas as etapas selecionadas
+        foreach ($etapas as $stepId => $config) {
+            if (!isset($config['production_step_id'])) {
+                continue;
+            }
+
+            ProdutoEtapaProducao::create([
+                'loja_id' => $product->loja_id,
+                'produto_id' => $product->id,
+                'production_step_id' => (int) $config['production_step_id'],
+                'ordem' => (int) ($config['ordem'] ?? 0),
+                'tempo_estimado_minutos' => isset($config['tempo_estimado_minutos']) ? (int) $config['tempo_estimado_minutos'] : null,
+                'obrigatorio' => isset($config['obrigatorio']) && $config['obrigatorio'],
+            ]);
         }
     }
 

@@ -38,7 +38,7 @@ class ProductController extends Controller
     public function store(ProductRequest $request): RedirectResponse
     {
         if (!$this->applicationService->canCreateProduct()) {
-            return back()->with('erro', 'Limite de produtos atingido. Faça um upgrade.')->withInput();
+            return back()->with('limite_atingido', 'O limite de cadastro de produtos para o seu plano foi atingido.');
         }
 
         if (!$this->applicationService->canUseAdvancedFor((string) $request->modelo_cadastro)) {

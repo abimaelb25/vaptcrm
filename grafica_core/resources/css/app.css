@@ -31,6 +31,10 @@
 }
 
 @layer base {
+    [x-cloak] {
+        display: none !important;
+    }
+
     body {
         @apply antialiased bg-[var(--color-brand-bg)] text-[var(--color-brand-text)] font-sans;
         background-color: var(--color-brand-bg);
@@ -40,6 +44,18 @@
     h1, h2, h3, h4, h5, h6 {
         font-family: var(--font-heading);
         color: var(--color-brand-secondary);
+    }
+
+    button:not(:disabled),
+    a.btn,
+    a.btn-base,
+    [role='button']:not([aria-disabled='true']) {
+        cursor: pointer;
+    }
+
+    button:disabled,
+    [aria-disabled='true'] {
+        cursor: not-allowed;
     }
 }
 
@@ -84,5 +100,468 @@
     .scrollbar-hide {
         -ms-overflow-style: none;
         scrollbar-width: none;
+    }
+
+    .btn-base {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/30;
+    }
+
+    .btn-primary {
+        @apply bg-gradient-to-r from-brand-primary to-orange-500 text-white shadow-md hover:shadow-lg hover:brightness-105;
+    }
+
+    .btn-secondary {
+        @apply border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50;
+    }
+
+    .page-header {
+        @apply mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between;
+    }
+
+    .page-header-title {
+        @apply text-3xl font-black text-brand-secondary tracking-tight;
+    }
+
+    .page-header-subtitle {
+        @apply mt-1 text-sm font-medium text-slate-500;
+    }
+
+    .page-actions {
+        @apply flex w-full flex-wrap items-center justify-end gap-2 md:w-auto;
+    }
+
+    .sidebar-menu-item {
+        @apply flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-all duration-300;
+    }
+
+    .admin-mobile-drawer {
+        will-change: transform;
+    }
+
+    .public-shell {
+        @apply w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+    }
+
+    .public-breadcrumb {
+        @apply mb-4 flex items-center gap-2 overflow-x-auto whitespace-nowrap text-[10px] font-black uppercase tracking-wider text-slate-400;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .public-breadcrumb::-webkit-scrollbar {
+        display: none;
+    }
+
+    .public-card {
+        @apply rounded-2xl border border-slate-100 bg-white shadow-sm;
+    }
+
+    .public-section-title {
+        @apply text-2xl font-black tracking-tight text-brand-secondary;
+    }
+
+    .public-mobile-cta {
+        @apply sticky bottom-3 z-20 mt-4;
+    }
+
+    .catalog-view-btn.active-view,
+    .catalog-mobile-view-btn.active-view {
+        @apply bg-brand-secondary text-white shadow-lg shadow-brand-secondary/20;
+    }
+
+    .catalog-view-btn:not(.active-view),
+    .catalog-mobile-view-btn:not(.active-view) {
+        @apply text-slate-400 hover:bg-white hover:text-brand-secondary;
+    }
+
+    .catalog-slide-in-left {
+        animation: catalogSlideInLeft 0.3s ease-out forwards;
+    }
+
+    @keyframes catalogSlideInLeft {
+        from { transform: translateX(-100%); }
+        to { transform: translateX(0); }
+    }
+}
+
+@media (max-width: 767px) {
+    .admin-area .admin-mobile-header {
+        border-bottom-width: 3px;
+    }
+
+    .admin-area .admin-mobile-content {
+        padding-bottom: 0.75rem;
+    }
+
+    .admin-area .page-header {
+        @apply mb-4 gap-3;
+    }
+
+    .admin-area .page-header-title {
+        @apply text-2xl;
+    }
+
+    .admin-area .page-header-subtitle {
+        @apply text-xs;
+    }
+
+    .admin-area .page-actions {
+        @apply gap-1.5;
+    }
+
+    .admin-area .btn-base {
+        @apply min-h-10 px-4 py-2.5;
+    }
+
+    .admin-area .admin-mobile-toggle {
+        @apply h-9 w-9;
+    }
+
+    .admin-area .admin-mobile-drawer {
+        width: min(86vw, 340px);
+    }
+
+    .admin-area .admin-mobile-drawer-header {
+        min-height: 65px;
+    }
+
+    .admin-area .input-modern,
+    .admin-area .select-modern,
+    .admin-area input:not([type='checkbox']):not([type='radio']):not([type='range']),
+    .admin-area select,
+    .admin-area textarea {
+        @apply min-h-11 text-sm;
+    }
+
+    .admin-area .card-secao {
+        @apply p-4;
+    }
+
+    /* ================================================
+     * CATÁLOGO PÚBLICO — COMPACTAÇÃO MOBILE
+     * Autoria: Abimael Borges | https://abimaelborges.adv.br
+     * Modificado em: 2026-04-22 02:00 -03:00
+     * ================================================ */
+
+    .public-catalog header .public-header-wrap {
+        @apply px-4 py-2;
+    }
+
+    .public-catalog main.public-main {
+        @apply px-3 py-4;
+    }
+
+    /* Tipografia compacta mobile */
+    .public-catalog h1 {
+        @apply text-xl leading-tight;
+    }
+
+    .public-catalog h2 {
+        @apply text-base leading-snug;
+    }
+
+    .public-catalog h3 {
+        @apply text-sm leading-snug;
+    }
+
+    .public-catalog .public-section-title {
+        @apply text-lg;
+    }
+
+    /* Cards e widgets compactos */
+    .public-catalog .public-card {
+        @apply rounded-xl;
+    }
+
+    .public-catalog .product-mobile-grid {
+        @apply gap-4;
+    }
+
+    .public-catalog .product-hero-image {
+        aspect-ratio: 4 / 3;
+    }
+
+    .public-catalog .public-touch {
+        min-height: 44px;
+    }
+
+    /* Selos de confiança compactos */
+    .public-catalog .trust-seals-grid {
+        @apply gap-2;
+    }
+
+    .public-catalog .trust-seals-grid > div {
+        @apply p-3 rounded-xl;
+    }
+
+    .public-catalog .trust-seals-grid .w-8 {
+        @apply w-6 h-6 mb-1.5;
+    }
+
+    /* Configurador/aside comercial compacto */
+    .public-catalog .product-configurator {
+        @apply p-4 rounded-xl;
+    }
+
+    .public-catalog .product-configurator .config-header {
+        @apply mb-4 pb-4;
+    }
+
+    .public-catalog .product-configurator .config-header h1 {
+        @apply text-lg mb-1;
+    }
+
+    .public-catalog .product-configurator .config-price {
+        @apply text-2xl;
+    }
+
+    .public-catalog .product-configurator .config-form {
+        @apply gap-3;
+    }
+
+    .public-catalog .product-configurator .config-block {
+        @apply rounded-xl p-3;
+    }
+
+    .public-catalog .product-configurator .config-label {
+        @apply mb-1.5 text-[9px];
+    }
+
+    .public-catalog .product-configurator .config-select {
+        @apply rounded-xl px-4 py-2.5 text-xs;
+    }
+
+    .public-catalog .product-configurator .config-arte-block {
+        @apply p-4 rounded-xl;
+    }
+
+    .public-catalog .product-configurator .config-arte-option {
+        @apply p-3 rounded-xl;
+    }
+
+    .public-catalog .product-configurator .config-textarea {
+        @apply rounded-xl px-4 py-3 text-xs;
+    }
+
+    .public-catalog .product-configurator .config-info-badge {
+        @apply px-2.5 py-1.5 text-[10px] rounded-lg;
+    }
+
+    /* CTA compacto */
+    .public-catalog .public-mobile-cta {
+        @apply mt-2 pt-3;
+    }
+
+    .public-catalog .public-mobile-cta .btn-cta-primary {
+        @apply h-12 rounded-xl text-sm;
+    }
+
+    /* WhatsApp compacto */
+    .public-catalog .product-whatsapp {
+        @apply mt-3 p-3 rounded-xl;
+    }
+
+    .public-catalog .product-whatsapp .whats-icon {
+        @apply w-10 h-10 rounded-xl text-xl;
+    }
+
+    .public-catalog .product-whatsapp h4 {
+        @apply text-sm;
+    }
+
+    .public-catalog .product-whatsapp p {
+        @apply text-[9px];
+    }
+
+    /* Descrição compacta */
+    .public-catalog .product-description {
+        @apply p-4 rounded-xl;
+    }
+
+    .public-catalog .product-description .desc-header {
+        @apply mb-4 gap-2;
+    }
+
+    .public-catalog .product-description .desc-header h2 {
+        @apply text-base;
+    }
+
+    .public-catalog .product-description .desc-header .w-1\.5 {
+        @apply h-6;
+    }
+
+    .public-catalog .product-description .desc-info-cards {
+        @apply mt-5 gap-3;
+    }
+
+    .public-catalog .product-description .desc-info-card {
+        @apply p-3 rounded-xl gap-3;
+    }
+
+    .public-catalog .product-description .desc-info-card .info-icon {
+        @apply w-9 h-9 rounded-xl text-lg;
+    }
+
+    /* Produtos relacionados compactos */
+    .public-catalog .related-section {
+        @apply mt-12;
+    }
+
+    .public-catalog .related-section .related-header {
+        @apply mb-6;
+    }
+
+    .public-catalog .related-section .related-header h2 {
+        @apply text-xl;
+    }
+
+    .public-catalog .related-section .related-header span:first-child {
+        @apply text-[9px] mb-1;
+    }
+
+    .public-catalog .related-section .related-grid {
+        @apply gap-4;
+    }
+
+    /* Carrinho compacto */
+    .public-catalog .cart-header h1 {
+        @apply text-xl;
+    }
+
+    .public-catalog .cart-item {
+        @apply p-4 rounded-xl gap-4;
+    }
+
+    .public-catalog .cart-item .cart-item-img {
+        @apply w-20 h-20 rounded-xl;
+    }
+
+    .public-catalog .cart-item .cart-item-name {
+        @apply text-sm;
+    }
+
+    .public-catalog .cart-item .cart-item-price {
+        @apply text-base;
+    }
+
+    .public-catalog .cart-summary {
+        @apply rounded-xl;
+    }
+
+    .public-catalog .cart-summary .cart-summary-header {
+        @apply p-5 pb-10;
+    }
+
+    .public-catalog .cart-summary .cart-summary-header h2 {
+        @apply text-lg;
+    }
+
+    .public-catalog .cart-summary .cart-summary-body {
+        @apply p-5 pb-6;
+    }
+
+    .public-catalog .cart-summary .cart-total-value {
+        @apply text-2xl;
+    }
+
+    .public-catalog .cart-summary .cart-cta-finalizar {
+        @apply p-4 rounded-xl mt-5;
+    }
+
+    .public-catalog .cart-summary .cart-cta-finalizar span {
+        @apply text-sm;
+    }
+
+    /* Checkout compacto */
+    .public-catalog .checkout-header h1 {
+        @apply text-xl mb-1;
+    }
+
+    .public-catalog .checkout-form-card {
+        @apply p-4 rounded-xl;
+    }
+
+    .public-catalog .checkout-form-card h2 {
+        @apply text-sm mb-4;
+    }
+
+    .public-catalog .checkout-form-card input,
+    .public-catalog .checkout-form-card textarea,
+    .public-catalog .checkout-form-card select {
+        @apply py-2.5 px-3 text-sm rounded-lg;
+    }
+
+    .public-catalog .checkout-form-card label {
+        @apply text-xs mb-0.5;
+    }
+
+    .public-catalog .checkout-submit {
+        @apply py-3 rounded-lg text-sm;
+    }
+
+    /* Catálogo/listagem toolbar compacta */
+    .public-catalog .catalog-toolbar {
+        @apply mb-5 gap-3;
+    }
+
+    .public-catalog .catalog-toolbar h1 {
+        @apply text-lg;
+    }
+
+    .public-catalog .catalog-toolbar p {
+        @apply text-[10px];
+    }
+
+    /* Galeria compacta na página de produto */
+    .public-catalog .product-gallery {
+        @apply p-2 rounded-xl;
+    }
+
+    .public-catalog .product-gallery .gallery-thumbnails {
+        @apply mt-3 gap-2;
+    }
+
+    .public-catalog .product-gallery .gallery-thumbnails button {
+        @apply w-14 h-14 rounded-xl;
+    }
+
+    /* Rodapé compacto */
+    .public-catalog footer {
+        @apply py-8;
+    }
+
+    .public-catalog footer .grid {
+        @apply gap-6;
+    }
+}
+
+/* Compactação extra para telas menores (até 480px) */
+@media (max-width: 480px) {
+    .public-catalog main.public-main {
+        @apply px-2.5 py-3;
+    }
+
+    .public-catalog .product-configurator {
+        @apply p-3;
+    }
+
+    .public-catalog .product-configurator .config-header h1 {
+        @apply text-base;
+    }
+
+    .public-catalog .product-configurator .config-price {
+        @apply text-xl;
+    }
+
+    .public-catalog .product-configurator .config-form {
+        @apply gap-2.5;
+    }
+
+    .public-catalog .product-gallery .gallery-thumbnails button {
+        @apply w-12 h-12 rounded-lg;
+    }
+
+    .public-catalog .public-mobile-cta .btn-cta-primary {
+        @apply h-11 text-xs;
     }
 }

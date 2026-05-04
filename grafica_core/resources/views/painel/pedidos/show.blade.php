@@ -51,6 +51,17 @@
             <button onclick="document.getElementById('modalStatus').classList.remove('hidden')" class="btn bg-brand-secondary text-white px-6 py-3 rounded-2xl font-black text-xs uppercase shadow-xl shadow-brand-secondary/20 hover:scale-105 transition-all">
                 Mudar Status
             </button>
+
+            <form action="{{ route('admin.whatsapp.manual-link', $pedido) }}" method="GET" class="flex items-center gap-2">
+                <select name="event_key" class="rounded-2xl border-slate-200 text-xs font-black text-slate-700 px-3 py-3 bg-white">
+                    @foreach($whatsAppEventOptions as $eventKey => $eventLabel)
+                        <option value="{{ $eventKey }}" @selected($defaultWhatsAppEventKey === $eventKey)>{{ $eventLabel }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" class="btn bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase shadow-xl shadow-emerald-700/20 hover:scale-105 transition-all">
+                    Enviar WhatsApp
+                </button>
+            </form>
         </div>
         
         <!-- Decor Glassmorphism -->

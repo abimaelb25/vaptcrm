@@ -25,20 +25,30 @@ class EstoqueMovimentacao extends Model
         'insumo_id',
         'tipo',
         'origem',
+        'origem_tela',
         'quantidade',
+        'quantidade_base',
         'custo_unitario',
         'valor_total',
+        'saldo_anterior',
+        'saldo_posterior',
         'fornecedor_id',
         'referencia_id',
         'descricao',
+        'motivo',
+        'metadata',
         'data_movimentacao',
         'usuario_id',
     ];
 
     protected $casts = [
         'quantidade' => 'float',
+        'quantidade_base' => 'float',
         'custo_unitario' => 'float',
         'valor_total' => 'float',
+        'saldo_anterior' => 'float',
+        'saldo_posterior' => 'float',
+        'metadata' => 'array',
         'data_movimentacao' => 'datetime',
     ];
 

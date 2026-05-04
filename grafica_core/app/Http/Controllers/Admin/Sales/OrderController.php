@@ -19,6 +19,7 @@ use App\Models\Produto;
 use App\Models\Usuario;
 use App\Modules\Pedidos\Services\OrderBoardService;
 use App\Services\Domain\OrderService;
+use App\Services\WhatsApp\WhatsAppSettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -29,6 +30,7 @@ class OrderController extends Controller
 {
     public function __construct(
         protected OrderService $orderService,
+        protected WhatsAppSettingsService $whatsAppSettingsService,
         private readonly OrderBoardService $boardService,
     ) {
         $this->authorizeResource(Pedido::class, 'pedido');
@@ -105,7 +107,9 @@ class OrderController extends Controller
         return view('painel.pedidos.show', [
             'pedido'    => $pedido,
             'statusMap' => $this->getStatusMap(),
-            'equipe'    => Usuario::where('ativo', true)->orderBy('nome')->get()
+            'equipe'    => Usuario::where('ativo', true)->orderBy('nome')->get(),
+            'whatsAppEventOptions' => $this->whatsAppSettingsService->eventOptions(),
+            'defaultWhatsAppEventKey' => $this->whatsAppSettingsService->eventKeyForPedidoStatus((string) $pedido->status),
         ]);
     }
 

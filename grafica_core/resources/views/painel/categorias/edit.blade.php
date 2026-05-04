@@ -7,10 +7,10 @@ Modificado em: 2026-04-10
     <div class="mb-6 flex flex-col sm:flex-row items-center justify-between">
         <div>
             <h1 class="text-3xl font-black text-brand-secondary">Editar: {{ $categoria->nome }}</h1>
-            <p class="text-slate-500 font-medium">Slug: <code class="bg-slate-100 px-2 py-0.5 rounded text-xs font-mono">/catalogo/categoria/{{ $categoria->slug }}</code></p>
+            <p class="text-slate-500 font-medium">URL: <code class="bg-slate-100 px-2 py-0.5 rounded text-xs font-mono">/catalogo?categoria={{ $categoria->slug }}</code></p>
         </div>
         <div class="mt-4 sm:mt-0 flex gap-2">
-            <a href="{{ route('site.categoria', $categoria->slug) }}" target="_blank" class="rounded-xl border border-brand-primary/30 bg-orange-50 px-5 py-2 text-sm font-bold text-brand-primary shadow-sm transition hover:bg-orange-100">Ver no Site ↗</a>
+            <a href="{{ \App\Support\PublicUrlHelper::categoria($categoria) }}" target="_blank" class="rounded-xl border border-brand-primary/30 bg-orange-50 px-5 py-2 text-sm font-bold text-brand-primary shadow-sm transition hover:bg-orange-100">Ver no Site ↗</a>
             <a href="{{ route('admin.catalog.categorias.index') }}" class="rounded-xl border border-slate-200 bg-white px-5 py-2 text-sm font-bold text-slate-600 shadow-sm transition hover:bg-slate-50">Voltar</a>
         </div>
     </div>

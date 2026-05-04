@@ -19,7 +19,10 @@ use App\Models\EmployeeVacation;
 use App\Models\Tarefa;
 use App\Models\Usuario;
 use App\Services\Core\MediaService;
-use App\Services\SaaS\SaaSService;
+use App\Services\RH\EmployeeOccurrenceService;
+use App\Services\SaaS\PlanService;
+use App\Services\Support\TrainingProgressService;
+use App\Models\HelpContent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,8 +32,10 @@ use Illuminate\View\View;
 class EmployeeController extends Controller
 {
     public function __construct(
-        protected SaaSService $saasService,
-        protected MediaService $mediaService
+        protected MediaService $mediaService,
+        protected PlanService $planService,
+        protected EmployeeOccurrenceService $occurrenceService,
+        protected TrainingProgressService $trainingProgressService,
     ) {}
 
     public function index(Request $request): View
@@ -53,15 +58,26 @@ class EmployeeController extends Controller
             $query->where('status_funcional', $request->status);
         }
 
+        $totalAtivos = Employee::where('status_funcional', 'ativo')->count();
+        $totalFerias = Employee::where('status_funcional', 'ferias')->count();
+
+        // Licença de usuário SaaS representa acesso sistêmico efetivamente ativo
+        // (entidade: usuarios.ativo = true), não apenas cadastro de colaborador.
+        $licencasEmUso = Usuario::where('ativo', true)->count();
+
         return view('painel.funcionarios.index', [
             'funcionarios' => $query->latest()->paginate(20),
             'busca' => $request->busca,
+            'totalAtivos' => $totalAtivos,
+            'totalFerias' => $totalFerias,
+            'licencasEmUso' => $licencasEmUso,
         ]);
     }
 
     public function show(Employee $equipe): View
     {
         $equipe->load(['usuario', 'documentos', 'ferias', 'registrosSaude', 'historico.autor']);
+        $permissoesOcorrencia = $this->occurrenceService->obterPermissoes($equipe);
         
         $statusList = ['backlog', 'a_fazer', 'em_andamento', 'bloqueada', 'concluida', 'cancelada'];
         $tarefas = collect();
@@ -72,9 +88,26 @@ class EmployeeController extends Controller
             }
         }
 
+        $trainingOverview = null;
+        if ($equipe->usuario) {
+            $aulas = HelpContent::query()
+                ->with(['course.track'])
+                ->publicados()
+                ->daBiblioteca()
+                ->orderBy('ordem')
+                ->orderBy('id')
+                ->get()
+                ->filter(fn (HelpContent $lesson) => $lesson->isDisponivelParaPlano($equipe->usuario?->loja?->plano?->slug))
+                ->values();
+
+            $trainingOverview = $this->trainingProgressService->detalharColaborador($equipe->usuario, $aulas);
+        }
+
         return view('painel.funcionarios.show', [
             'funcionario' => $equipe,
-            'tarefas' => $tarefas
+            'tarefas' => $tarefas,
+            'permissoesOcorrencia' => $permissoesOcorrencia,
+            'trainingOverview' => $trainingOverview,
         ]);
     }
 
@@ -114,15 +147,24 @@ class EmployeeController extends Controller
             'avatar' => ['nullable', 'image', 'max:2048'],
         ]);
 
-        if ($request->criar_acesso && !$this->saasService->podeAdicionar('funcionario')) {
-            return back()->with('erro', 'Limite de acessos do plano atingido.');
+        $vaiCriarAcesso = (bool) $request->boolean('criar_acesso');
+
+        // Regra de licença SaaS:
+        // - colaborador sem acesso ao sistema NAO consome licença
+        // - licença é consumida apenas ao criar usuário de acesso (usuarios)
+        if ($vaiCriarAcesso) {
+            try {
+                $this->planService->ensureLimit('max_usuarios', 1);
+            } catch (\Throwable $e) {
+                return back()->with('limite_atingido', $e->getMessage())->withInput();
+            }
         }
 
         try {
             DB::beginTransaction();
 
             $user_id = null;
-            if ($request->criar_acesso) {
+            if ($vaiCriarAcesso) {
                 $avatarPath = null;
                 if ($request->hasFile('avatar')) {
                     $avatarPath = $this->mediaService->saveWithSquareCrop($request->file('avatar'), 'avatars', 'emp');
@@ -199,8 +241,43 @@ class EmployeeController extends Controller
             $oldCargo = $equipe->cargo_interno;
             $oldSalario = (float) $equipe->salario_base;
 
-            // Atualiza RH
-            $equipe->update($request->except(['email_acesso', 'senha_acesso', 'perfil', 'permissoes', 'avatar']));
+            // Atualiza RH com whitelist explícita para evitar mass assignment
+            // de campos sensíveis (ex.: loja_id e user_id).
+            $equipe->update($request->only([
+                'nome_completo',
+                'nome_social',
+                'email_pessoal',
+                'cpf',
+                'rg',
+                'orgao_emissor',
+                'data_nascimento',
+                'sexo',
+                'estado_civil',
+                'nacionalidade',
+                'naturalidade',
+                'telefone',
+                'whatsapp',
+                'cep',
+                'endereco',
+                'numero',
+                'complemento',
+                'bairro',
+                'cidade',
+                'uf',
+                'matricula',
+                'cargo_formal',
+                'cargo_interno',
+                'setor',
+                'tipo_vinculo',
+                'data_admissao',
+                'data_desligamento',
+                'status_funcional',
+                'jornada_tipo',
+                'carga_horaria_semanal',
+                'salario_base',
+                'comissao_percentual',
+                'observacoes_gerais',
+            ]));
 
             // Registra Histórico (Mudanças críticas)
             if ($oldCargo !== $equipe->cargo_interno) {

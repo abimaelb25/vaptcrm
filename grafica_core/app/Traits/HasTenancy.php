@@ -36,28 +36,31 @@ trait HasTenancy
 
         // Aplica filtro global de loja em todas as consultas
         static::addGlobalScope('loja', function (Builder $builder) {
-            // Evita recursão e erros em console/migrations ou se for super_admin
+            // Evita recursão e erros em console/migrations
             if (app()->runningInConsole()) {
                 return;
             }
 
-            // SEGURANÇA: Super Admins podem ver TUDO para suporte e gestão da plataforma.
-            // Usamos Auth::check() para forçar a resolução do usuário durante o Route Model Binding.
-            if (Auth::check() && Auth::user()->isSuperAdmin()) {
+            // SEGURANÇA: Usamos Auth::hasUser() para verificar se o usuário já foi carregado.
+            // Se o usuário já estiver na memória, validamos se é Super Admin para liberar acesso total.
+            if (Auth::hasUser() && Auth::user()->isSuperAdmin()) {
                 return;
             }
 
             $lojaId = null;
 
-            // 1. Contexto de Usuário Autenticado (Painel Admin)
-            if (Auth::check() && Auth::user()->loja_id) {
+            // 1. Contexto de Usuário Autenticado
+            // Usamos Auth::id() que é mais leve e Auth::user() apenas se já estiver resolvido
+            if (Auth::hasUser()) {
                 $lojaId = Auth::user()->loja_id;
             } 
-            // 2. Contexto de Tenant Descoberto (Catálogo Público)
+            // 2. Fallback para Tenant Context (Catálogo/Landing)
             else if (app()->bound(\App\Services\SaaS\TenantContext::class)) {
                 $lojaId = app(\App\Services\SaaS\TenantContext::class)->getLojaId();
             }
 
+            // Aplica o filtro apenas se houver um tenant identificado
+            // Para a Landing Page da plataforma, lojaId será null e o filtro não é aplicado.
             if ($lojaId) {
                 $builder->where($builder->getModel()->getTable() . '.loja_id', $lojaId);
             }

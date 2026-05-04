@@ -26,10 +26,12 @@ class PedidoPolicy
 
     /**
      * Visualizar detalhes de um pedido específico.
+     * Reforça isolamento de tenant além do global scope HasTenancy.
      */
     public function view(Usuario $user, Pedido $pedido): bool
     {
-        return $this->viewAny($user);
+        return $this->viewAny($user)
+            && (int) $pedido->loja_id === (int) $user->loja_id;
     }
 
     /**
@@ -45,6 +47,11 @@ class PedidoPolicy
      */
     public function update(Usuario $user, Pedido $pedido): bool
     {
+        // Isolamento de tenant obrigatório — defesa em profundidade
+        if ((int) $pedido->loja_id !== (int) $user->loja_id) {
+            return false;
+        }
+
         // Administrador e Atendente podem editar tudo.
         if (in_array($user->perfil, ['administrador', 'atendente'], true)) {
             return true;
@@ -52,7 +59,6 @@ class PedidoPolicy
 
         // Produção pode atualizar status para 'em_producao', 'pronto', etc.
         // Financeiro pode atualizar status de pagamento/faturamento.
-        // O controle fino de QUAIS campos podem ser alterados será feito no Request/Controller.
         return in_array($user->perfil, ['produção', 'financeiro'], true);
     }
 
@@ -61,7 +67,8 @@ class PedidoPolicy
      */
     public function delete(Usuario $user, Pedido $pedido): bool
     {
-        return $user->perfil === 'administrador';
+        return $user->perfil === 'administrador'
+            && (int) $pedido->loja_id === (int) $user->loja_id;
     }
 
     /**

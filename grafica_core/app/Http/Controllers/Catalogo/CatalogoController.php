@@ -39,19 +39,40 @@ class CatalogoController extends Controller
     public function inicio(Request $request): mixed
     {
         $tenantContext = app(\App\Services\SaaS\TenantContext::class);
+        $host = $request->getHost();
+        $baseHost = parse_url(config('app.url'), PHP_URL_HOST);
 
-        // Se estivermos no contexto de uma Loja específica, mostramos o catálogo dela.
+        // PRIORIDADE 1: Se há tenant no contexto (detectado pelo middleware via ?loja=, sessão ou subdomínio),
+        // mostramos o catálogo da loja, mesmo que o host seja o domínio principal.
         if ($tenantContext->hasTenant()) {
             return $this->catalogo($request);
         }
 
-        // Caso contrário, mostramos a Landing Page da PLATAFORMA (vaptCRM)
+        // PRIORIDADE 2: Se não há tenant e estamos no domínio principal, mostramos a Landing Page da PLATAFORMA.
+        if ($host === $baseHost || $host === 'localhost' || $host === '127.0.0.1') {
+            return $this->renderLandingPlataforma($request);
+        }
+
+        // Se estivermos em um subdomínio ou domínio personalizado, mostramos o catálogo da loja.
+        if ($tenantContext->hasTenant()) {
+            return $this->catalogo($request);
+        }
+
+        // Fallback: Landing Page da PLATAFORMA
+        return $this->renderLandingPlataforma($request);
+    }
+
+    /**
+     * Renderiza a Landing Page institucional da Plataforma VaptCRM.
+     */
+    private function renderLandingPlataforma(Request $request): mixed
+    {
         $this->metricaService->registrarView($request, 'home_plataforma');
 
-        // Banners Institucionais (sem loja_id filtrado automaticamente ou filtrado por nulo)
+        // Banners Institucionais
         $banners = Banner::where('ativo', true)->orderBy('ordem')->get();
         
-        // Depoimentos da PLATAFORMA (Prova Social do Software)
+        // Depoimentos da PLATAFORMA
         $depoimentos = Depoimento::daPlataforma()->publicados()->orderBy('ordem_exibicao')->get();
         
         // Planos SaaS
@@ -83,10 +104,12 @@ class CatalogoController extends Controller
                   ->orWhere('descricao_curta', 'like', '%' . $request->busca . '%');
         }
 
-        // Filtro por categoria via query string ?categoria=id
+        // Filtro por categoria via query string ?categoria=slug
         $categoriaAtiva = null;
         if ($request->filled('categoria')) {
-            $categoriaAtiva = Categoria::where('id', $request->categoria)->first();
+            $categoriaAtiva = Categoria::where('slug', $request->categoria)
+                ->where('ativo', true)
+                ->first();
             if ($categoriaAtiva) {
                 $query->where('categoria_id', $categoriaAtiva->id);
             }

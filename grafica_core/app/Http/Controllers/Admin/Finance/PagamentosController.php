@@ -14,6 +14,7 @@ use App\Http\Controllers\Controller;
 use App\Models\IntegracaoPagamento;
 use App\Models\Cupom;
 use App\Models\SiteConfiguracao;
+use App\Services\Domain\FinanceApplicationService;
 use App\Services\FreteService;
 use App\Services\MercadoPagoConfigService;
 use App\Services\PaymentIntegrationService;
@@ -25,6 +26,7 @@ use Illuminate\View\View;
 class PagamentosController extends Controller
 {
     public function __construct(
+        protected FinanceApplicationService $financeApplicationService,
         protected FreteService $freteService,
         protected PaymentIntegrationService $integrationService,
         protected MercadoPagoConfigService $mercadoPagoService
@@ -32,39 +34,7 @@ class PagamentosController extends Controller
 
     public function index(): View
     {
-        $usuario = auth()->user();
-        $userId = $usuario?->id;
-        $lojaId = $usuario?->loja_id;
-
-        $freteConfig = $this->freteService->getConfig($lojaId);
-        $mercadoPago = $this->integrationService->getActiveIntegration(
-            $lojaId,
-            IntegracaoPagamento::GATEWAY_MERCADO_PAGO,
-            $userId
-        );
-        $integrations = $this->integrationService->getAllByTenant($lojaId, $userId);
-
-        $pixConfig = $this->buscarPixConfig($lojaId);
-
-        $cuponsAtivos = Cupom::query()
-            ->when($lojaId, fn ($query) => $query->where('loja_id', $lojaId))
-            ->where('ativo', true)
-            ->count();
-
-        $cupons = Cupom::query()
-            ->when($lojaId, fn ($query) => $query->where('loja_id', $lojaId))
-            ->latest()
-            ->take(10)
-            ->get();
-
-        return view('painel.pagamentos.index', compact(
-            'freteConfig',
-            'mercadoPago',
-            'integrations',
-            'pixConfig',
-            'cuponsAtivos',
-            'cupons'
-        ));
+        return view('painel.pagamentos.index', $this->financeApplicationService->paymentsIndexPayload());
     }
 
     public function updateFrete(Request $request): RedirectResponse

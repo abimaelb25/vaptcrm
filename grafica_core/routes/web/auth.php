@@ -11,6 +11,8 @@ Route::middleware('guest')->group(function () {
 
     Route::get('/recuperar-senha', [SessaoController::class, 'recuperarSenhaForm'])->name('password.request');
     Route::post('/recuperar-senha', [SessaoController::class, 'enviarRecuperacao'])->name('password.email');
+    Route::get('/redefinir-senha/{token}', [SessaoController::class, 'redefinirSenhaForm'])->name('password.reset');
+    Route::post('/redefinir-senha', [SessaoController::class, 'atualizarSenha'])->name('password.update');
 });
 
 Route::match(['GET', 'POST'], '/sair', [SessaoController::class, 'sair'])

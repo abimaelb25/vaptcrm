@@ -37,6 +37,8 @@ class Pedido extends Model
     protected $fillable = [
         'loja_id',
         'numero',
+        'numero_sequencial',
+        'codigo_pedido',
         'numero_acompanhamento',
         'origem',
         'tipo_atendimento',
@@ -107,5 +109,98 @@ class Pedido extends Model
     public function cupom(): BelongsTo
     {
         return $this->belongsTo(Cupom::class, 'cupom_id');
+    }
+
+    /**
+     * Verifica se o pedido está totalmente pago.
+     * Considera a soma dos pagamentos com status 'pago' em relação ao total do pedido.
+     */
+    public function estaPago(): bool
+    {
+        $totalPago = $this->pagamentos()
+            ->where('status', 'pago')
+            ->sum('valor');
+
+        return (float) $totalPago >= (float) $this->total;
+    }
+
+    /**
+     * Retorna o valor total já pago no pedido.
+     */
+    public function valorPago(): float
+    {
+        return (float) $this->pagamentos()
+            ->where('status', 'pago')
+            ->sum('valor');
+    }
+
+    /**
+     * Retorna o valor pendente de pagamento.
+     */
+    public function valorPendente(): float
+    {
+        return max(0, (float) $this->total - $this->valorPago());
+    }
+
+    /**
+     * Retorna o próximo número sequencial para uma loja.
+     * ATENÇÃO: Este método deve ser chamado dentro de uma transação com lock na loja.
+     */
+    public static function proximoSequencial(int $lojaId): int
+    {
+        return (int) static::where('loja_id', $lojaId)->max('numero_sequencial') + 1;
+    }
+
+    /**
+     * Gera o próximo número sequencial de forma segura contra concorrência.
+     *
+     * ESTRATÉGIA: Lock pessimista na LINHA DA LOJA (não nos pedidos).
+     * Isso serializa a geração de sequenciais por loja, evitando race conditions.
+     *
+     * IMPORTANTE: Este método DEVE ser chamado dentro de uma DB::transaction().
+     * O lock na loja garante que apenas uma transação por vez pode gerar sequencial.
+     *
+     * @param int $lojaId ID da loja
+     * @return int Próximo número sequencial
+     * @throws \RuntimeException Se a loja não for encontrada
+     */
+    public static function gerarSequencialSeguro(int $lojaId): int
+    {
+        // Lock exclusivo na linha da loja (funciona corretamente em InnoDB)
+        // Isso bloqueia outras transações que tentarem o mesmo lock até esta transacao finalizar
+        $loja = Loja::where('id', $lojaId)->lockForUpdate()->first();
+
+        if (!$loja) {
+            throw new \RuntimeException("Loja ID {$lojaId} não encontrada para geração de sequencial.");
+        }
+
+        // Agora é seguro ler o MAX porque temos lock exclusivo na loja
+        return (int) static::where('loja_id', $lojaId)->max('numero_sequencial') + 1;
+    }
+
+    /**
+     * Gera o código do pedido no formato: LOJA-AA-XXXXX
+     */
+    public static function gerarCodigoPedido(string $codigoLoja, int $sequencial, ?\DateTimeInterface $data = null): string
+    {
+        $ano = ($data ?? now())->format('y');
+        return sprintf('%s-%s-%05d', $codigoLoja, $ano, $sequencial);
+    }
+
+    /**
+     * Retorna o número de exibição preferencial.
+     * PDV: usa numero_sequencial. Cliente: usa codigo_pedido.
+     */
+    public function getNumeroExibicaoAttribute(): string
+    {
+        return $this->codigo_pedido ?? $this->numero ?? (string) $this->id;
+    }
+
+    /**
+     * Retorna apenas o número sequencial formatado (para PDV).
+     */
+    public function getNumeroBalcaoAttribute(): string
+    {
+        return $this->numero_sequencial ? '#' . $this->numero_sequencial : '#' . $this->id;
     }
 }

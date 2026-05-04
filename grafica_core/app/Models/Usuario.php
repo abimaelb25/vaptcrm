@@ -11,13 +11,20 @@ namespace App\Models;
 */
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Notifications\Notifiable;
 use App\Traits\HasTenancy;
 
+/**
+ * Autoria: Abimael Borges
+ * Site: https://abimaelborges.adv.br
+ * Data: 17/04/2026
+ */
 class Usuario extends Authenticatable
 {
-    use SoftDeletes, HasTenancy;
+    use HasFactory, SoftDeletes, HasTenancy, Notifiable;
     protected $table = 'usuarios';
 
     protected $fillable = [
@@ -74,6 +81,16 @@ class Usuario extends Authenticatable
     {
         return $this->hasOne(Employee::class, 'user_id');
     }
+
+    public function progressoAcademy(): HasMany
+    {
+        return $this->hasMany(UserLessonProgress::class, 'user_id');
+    }
+
+    public function quizAttempts(): HasMany
+    {
+        return $this->hasMany(QuizAttempt::class, 'user_id');
+    }
     
     /**
      * Verifica se o usuário tem uma permissão específica no JSON de permissões.
@@ -96,5 +113,12 @@ class Usuario extends Authenticatable
     public function isSuperAdmin(): bool
     {
         return $this->perfil === 'super_admin';
+    }
+    /**
+     * Envia o e-mail de redefinição de senha via Job assíncrono com SMTP da loja.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        app(\App\Services\System\NotificationService::class)->notifyPasswordReset($this, $token);
     }
 }

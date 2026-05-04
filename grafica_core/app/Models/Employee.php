@@ -74,9 +74,19 @@ class Employee extends Model
         return $this->belongsTo(Usuario::class, 'user_id');
     }
 
+    public function progressoAcademy(): HasMany
+    {
+        return $this->hasMany(UserLessonProgress::class, 'user_id', 'user_id');
+    }
+
     public function documentos(): HasMany
     {
         return $this->hasMany(EmployeeDocument::class);
+    }
+
+    public function ocorrencias(): HasMany
+    {
+        return $this->hasMany(EmployeeOccurrence::class);
     }
 
     public function ferias(): HasMany

@@ -47,7 +47,7 @@ class CustomerController extends Controller
             'nome' => ['required', 'string', 'max:150'],
             'email' => ['nullable', 'email', 'max:150'],
             'telefone' => ['nullable', 'string', 'max:25'],
-            'tipo_pessoa' => ['required', 'in:fisica,juridica'],
+            'tipo_pessoa' => ['required', 'in:F,J'],
             'cpf_cnpj' => ['nullable', 'string', 'max:25'],
             'empresa' => ['nullable', 'string', 'max:150'],
         ]);
@@ -58,7 +58,7 @@ class CustomerController extends Controller
 
     public function show(Cliente $cliente): View
     {
-        $cliente->load(['pedidos' => fn($q) => $q->latest()->take(10)]);
+        $cliente->load(['pedidos' => fn($q) => $q->with('itens.produto')->latest()->take(10)]);
         return view('painel.clientes.show', compact('cliente'));
     }
 
@@ -68,7 +68,7 @@ class CustomerController extends Controller
             'nome' => ['required', 'string', 'max:150'],
             'email' => ['nullable', 'email', 'max:150'],
             'telefone' => ['nullable', 'string', 'max:25'],
-            'tipo_pessoa' => ['required', 'in:fisica,juridica'],
+            'tipo_pessoa' => ['required', 'in:F,J'],
             'cpf_cnpj' => ['nullable', 'string', 'max:25'],
             'empresa' => ['nullable', 'string', 'max:150'],
         ]);

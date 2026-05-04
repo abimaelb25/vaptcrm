@@ -16,7 +16,8 @@ class ClientePolicy
 
     public function view(Usuario $user, Cliente $cliente): bool
     {
-        return $this->viewAny($user);
+        return $this->viewAny($user)
+            && (int) $cliente->loja_id === (int) $user->loja_id;
     }
 
     public function create(Usuario $user): bool
@@ -26,11 +27,13 @@ class ClientePolicy
 
     public function update(Usuario $user, Cliente $cliente): bool
     {
-        return in_array($user->perfil, ['administrador', 'gerente', 'atendente'], true);
+        return in_array($user->perfil, ['administrador', 'gerente', 'atendente'], true)
+            && (int) $cliente->loja_id === (int) $user->loja_id;
     }
 
     public function delete(Usuario $user, Cliente $cliente): bool
     {
-        return $user->perfil === 'administrador';
+        return $user->perfil === 'administrador'
+            && (int) $cliente->loja_id === (int) $user->loja_id;
     }
 }

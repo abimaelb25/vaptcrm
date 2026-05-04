@@ -4,13 +4,15 @@ Site: https://abimaelborges.adv.br
 Modificado em: 2026-04-06 00:00 -03:00
 --}}
 <x-layouts.app>
-    <div class="mb-6 flex flex-col sm:flex-row items-center justify-between">
-        <h1 class="text-3xl font-black text-brand-secondary">Gestão de Clientes</h1>
-        <div class="mt-4 sm:mt-0 flex gap-2">
+    <x-ui.page-header
+        title="Gestão de Clientes"
+        subtitle="Cadastre e mantenha os dados de relacionamento e contato dos clientes."
+    >
+        <x-slot:actions>
             <span class="h-2 w-8 rounded-full bg-brand-primary shadow-[0_0_8px_rgba(255,122,0,0.6)]"></span>
             <span class="h-2 w-8 rounded-full bg-brand-accent shadow-[0_0_8px_rgba(25,118,210,0.6)]"></span>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-ui.page-header>
 
     <!-- Filtros de Busca -->
     <div class="mb-6 rounded-2xl bg-white p-4 shadow-sm border border-slate-100 flex items-center">

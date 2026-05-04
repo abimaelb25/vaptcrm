@@ -256,6 +256,7 @@ class StripeService
 
     /**
      * Sincroniza o status da assinatura local com os dados do Stripe.
+     * Abimael Borges | https://abimaelborges.adv.br
      */
     private function handleSubscriptionUpdated(Event $evento): void
     {
@@ -266,15 +267,47 @@ class StripeService
             ->first();
 
         if ($assinaturaLocal) {
-            $assinaturaLocal->update([
+            $updateData = [
                 'status'                    => $subscription->status,
                 'stripe_subscription_id'    => $subscription->id,
                 'stripe_customer_id'        => $subscription->customer,
+                'gateway_provider'          => 'stripe',
+                'gateway_subscription_id'   => $subscription->id,
+                'gateway_customer_id'       => $subscription->customer,
+                'gateway_status'            => $subscription->status,
+                'financial_status'          => in_array($subscription->status, ['active', 'trialing', 'past_due'], true) ? 'adimplente' : 'inadimplente',
                 'trial_ends_at'             => $subscription->trial_end ? \Carbon\Carbon::createFromTimestamp($subscription->trial_end) : null,
                 'ends_at'                   => $subscription->cancel_at ? \Carbon\Carbon::createFromTimestamp($subscription->cancel_at) : null,
-            ]);
+                'renews_at'                 => !empty($subscription->current_period_end) ? \Carbon\Carbon::createFromTimestamp($subscription->current_period_end) : null,
+                'canceled_at'               => !empty($subscription->canceled_at) ? \Carbon\Carbon::createFromTimestamp($subscription->canceled_at) : null,
+            ];
 
-            Cache::forget('saas_assinatura_ativa');
+            // Identifica o Plano Atual no Stripe (pelo Price ID)
+            $stripePriceId = $subscription->items->data[0]->price->id ?? null;
+            if ($stripePriceId) {
+                $plano = \App\Models\SaaS\Plano::where('stripe_price_id', $stripePriceId)->first();
+                if ($plano) {
+                    $updateData['plano_id'] = $plano->id;
+                    $updateData['plan_version'] = $plano->version ?? 1;
+                    $updateData['plan_snapshot'] = [
+                        'plano_id' => $plano->id,
+                        'nome' => $plano->nome,
+                        'slug' => $plano->slug,
+                        'version' => $plano->version ?? 1,
+                        'preco_mensal' => $plano->preco_mensal,
+                    ];
+                }
+            }
+
+            $assinaturaLocal->update($updateData);
+
+            // Limpa TODOS os caches da loja para liberar os benefícios imediatamente
+            $loja = \App\Models\Loja::find($assinaturaLocal->loja_id);
+            if ($loja) {
+                $loja->invalidarTodosOsCaches();
+            } else {
+                Cache::forget("saas_assinatura_ativa_loja_{$assinaturaLocal->loja_id}");
+            }
         }
     }
 
@@ -291,9 +324,18 @@ class StripeService
             $assinaturaLocal->update([
                 'status'  => 'canceled',
                 'ends_at' => now(),
+                'gateway_status' => 'canceled',
+                'financial_status' => 'inadimplente',
+                'canceled_at' => now(),
             ]);
 
-            Cache::forget('saas_assinatura_ativa');
+            // Limpa TODOS os caches da loja para refletir o cancelamento imediatamente
+            $loja = \App\Models\Loja::find($assinaturaLocal->loja_id);
+            if ($loja) {
+                $loja->invalidarTodosOsCaches();
+            } else {
+                Cache::forget("saas_assinatura_ativa_loja_{$assinaturaLocal->loja_id}");
+            }
         }
     }
 

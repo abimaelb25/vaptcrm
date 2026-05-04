@@ -61,6 +61,16 @@ class FinanceService
 
     /**
      * Registra um pagamento parcial ou total para um título.
+     * 
+     * @param FinancialTitle $title Título financeiro
+     * @param array $data Dados do pagamento:
+     *   - valor (required): Valor do pagamento
+     *   - forma_pagamento (optional): Método de pagamento
+     *   - data_pagamento (optional): Data do pagamento
+     *   - account_id (optional): ID da conta bancária
+     *   - caixa_id (optional): ID do caixa PDV
+     *   - usuario_id (optional): ID do usuário que registrou
+     *   - comprovante_path (optional): Caminho do comprovante
      */
     public function addPayment(FinancialTitle $title, array $data): FinancialPayment
     {
@@ -85,7 +95,9 @@ class FinanceService
                 'forma_pagamento' => $payment->forma_pagamento,
                 'status' => 'pago',
                 'pedido_id' => $title->origem === 'pedido' ? $title->referencia_id : null,
-                'descricao' => "PAG: {$title->descricao}",
+                'caixa_id' => $data['caixa_id'] ?? null,
+                'usuario_id' => $data['usuario_id'] ?? auth()->id(),
+                'descricao' => $data['descricao'] ?? "PAG: {$title->descricao}",
             ]);
 
             return $payment;

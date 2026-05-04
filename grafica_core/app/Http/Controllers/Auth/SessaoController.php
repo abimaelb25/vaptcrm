@@ -19,12 +19,7 @@ class SessaoController extends Controller
 {
     public function formulario()
     {
-        // Geração do desafio anti-bot
-        $num1 = rand(1, 9);
-        $num2 = rand(1, 9);
-        session(['captcha_resultado' => $num1 + $num2]);
-
-        return view('auth.login', compact('num1', 'num2'));
+        return view('auth.login');
     }
 
     public function autenticar(Request $request): RedirectResponse
@@ -32,17 +27,7 @@ class SessaoController extends Controller
         $credenciais = $request->validate([
             'email' => ['required', 'email'],
             'senha' => ['required', 'string'],
-            'verificacao_humana' => ['prohibited'], // Anti-bot dinâmico
-            'captcha' => ['required', 'numeric'],
-        ], [
-            'verificacao_humana.prohibited' => 'Acesso negado. Atividade suspeita detectada.',
-            'captcha.required' => 'Por favor, responda ao desafio anti-bot.',
-            'captcha.numeric' => 'O desafio precisa ser um número.',
         ]);
-
-        if ((int)$request->captcha !== session('captcha_resultado')) {
-            return back()->withErrors(['captcha' => 'A resposta do cálculo anti-bot está incorreta.'])->withInput();
-        }
 
         // Tenta encontrar o usuário em qualquer loja (Cross-tenant) para resolver o contexto
         // Autoria: Abimael Borges | https://abimaelborges.adv.br | 2026-04-16
@@ -62,7 +47,6 @@ class SessaoController extends Controller
         }
 
         $request->session()->regenerate();
-        $request->session()->forget('captcha_resultado');
 
         // Diferencia o redirecionamento com base no perfil, respeitando a intenção original
         // Abimael Borges | https://abimaelborges.adv.br | 2026-04-16 01:04 BRT
@@ -82,7 +66,7 @@ class SessaoController extends Controller
         return redirect()->route('login');
     }
 
-    // Abimael Borges | https://abimaelborges.adv.br | 2026-04-16 - Recuperação de Senha
+    // Abimael Borges | https://abimaelborges.adv.br | 2026-04-17 - Recuperação de Senha
     public function recuperarSenhaForm()
     {
         return view('auth.recuperar-senha');
@@ -91,8 +75,43 @@ class SessaoController extends Controller
     public function enviarRecuperacao(Request $request)
     {
         $request->validate(['email' => 'required|email']);
-        
-        // Simulação de envio de instrução (evita vazamento de confirmação de e-mail existente por segurança)
-        return back()->with('sucesso', 'Se o e-mail estiver cadastrado, você receberá um link com as instruções para redefinição de senha em instantes.');
+
+        // O broker do Laravel cuida da geração do token e do envio do e-mail
+        $status = \Illuminate\Support\Facades\Password::broker()->sendResetLink(
+            $request->only('email')
+        );
+
+        return $status === \Illuminate\Support\Facades\Password::RESET_LINK_SENT
+            ? back()->with('sucesso', 'Link de recuperação enviado com sucesso. Verifique sua caixa de entrada.')
+            : back()->withErrors(['email' => 'O e-mail informado não foi encontrado em nossa base de dados.']);
+    }
+
+    public function redefinirSenhaForm(string $token)
+    {
+        return view('auth.redefinir-senha', ['token' => $token, 'email' => request('email')]);
+    }
+
+    public function atualizarSenha(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|min:8|confirmed',
+        ]);
+
+        $status = \Illuminate\Support\Facades\Password::broker()->reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, $password) {
+                $user->forceFill([
+                    'senha' => \Illuminate\Support\Facades\Hash::make($password)
+                ])->save();
+
+                \Illuminate\Support\Facades\Auth::login($user);
+            }
+        );
+
+        return $status === \Illuminate\Support\Facades\Password::PASSWORD_RESET
+            ? redirect()->route('admin.dashboard')->with('sucesso', 'Senha redefinida com sucesso. Você já está logado.')
+            : back()->withErrors(['email' => 'Ocorreu um erro ao redefinir sua senha. Tente novamente ou solicite um novo link.']);
     }
 }

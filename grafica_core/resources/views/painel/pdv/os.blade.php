@@ -9,7 +9,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OS #{{ $pedido->numero ?? 'N/A' }} — {{ $config['nome_fantasia'] ?? 'Gráfica' }}</title>
+    <title>Pedido #{{ $pedido->numero_sequencial ?? $pedido->numero ?? 'N/A' }} — {{ $config['nome_fantasia'] ?? 'Gráfica' }}</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
 
@@ -186,8 +186,8 @@
     {{-- Barra de ação (não imprime) --}}
     <div class="action-bar no-print-hidden">
         <div class="action-bar-title">
-            Ordem de Serviço #{{ $pedido->numero ?? 'N/A' }}
-            <small>{{ $config['nome_fantasia'] ?? 'Gráfica' }} · Emitida em {{ now()->format('d/m/Y \à\s H:i') }}</small>
+            Pedido #{{ $pedido->numero_sequencial ?? $pedido->numero ?? 'N/A' }}
+            <small>{{ $config['nome_fantasia'] ?? 'Gráfica' }} · {{ $pedido->codigo_pedido ?? '' }} · Emitida em {{ now()->format('d/m/Y \à\s H:i') }}</small>
         </div>
         <a href="javascript:history.back()" class="btn-back">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,13 +222,13 @@
                 {{-- Faixa laranja com nº OS --}}
                 <div class="os-number-block">
                     <div>
-                        <div class="os-number-label">Ordem de Serviço</div>
-                        <div class="os-number-val">#{{ $pedido->numero ?? 'N/A' }}</div>
+                        <div class="os-number-label">Pedido Nº</div>
+                        <div class="os-number-val" style="font-size:1.5rem;">{{ $pedido->numero_sequencial ?? $pedido->numero ?? 'N/A' }}</div>
                     </div>
                     <div style="width:1px;height:32px;background:rgba(255,255,255,.25);"></div>
                     <div>
                         <div class="os-track-label">Código de Acompanhamento</div>
-                        <div class="os-track-val">{{ $pedido->numero_acompanhamento ?? '—' }}</div>
+                        <div class="os-track-val">{{ $pedido->codigo_pedido ?? $pedido->numero_acompanhamento ?? '—' }}</div>
                     </div>
                     <div class="os-date">
                         <div style="font-size:.65rem;opacity:.7;font-weight:600;">Emissão</div>

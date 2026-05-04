@@ -12,6 +12,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Traits\HasTenancy;
 
 class ProductionOrderStep extends Model
@@ -22,6 +23,9 @@ class ProductionOrderStep extends Model
         'loja_id',
         'production_order_id',
         'production_step_id',
+        'nome_snapshot',
+        'ordem_snapshot',
+        'fase_snapshot',
         'status',
         'responsavel_id',
         'data_inicio',
@@ -29,6 +33,7 @@ class ProductionOrderStep extends Model
         'tempo_estimado',
         'tempo_real',
         'observacao',
+        'asset_id',
     ];
 
     protected $casts = [
@@ -51,5 +56,21 @@ class ProductionOrderStep extends Model
     public function responsavel(): BelongsTo
     {
         return $this->belongsTo(Usuario::class, 'responsavel_id');
+    }
+
+    /**
+     * Equipamento usado nesta execução.
+     */
+    public function asset(): BelongsTo
+    {
+        return $this->belongsTo(Asset::class);
+    }
+
+    /**
+     * Insumos previstos/consumidos nesta execução.
+     */
+    public function insumos(): HasMany
+    {
+        return $this->hasMany(ProductionOrderStepInsumo::class);
     }
 }

@@ -7,7 +7,7 @@ namespace App\Models;
 /*
 | Autoria: Abimael Borges
 | Site: https://abimaelborges.adv.br
-| Modificado em: 2026-04-04 19:49 -03:00
+| Modificado em: 2026-04-17 13:58 -03:00
 */
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -32,5 +32,10 @@ class HistoricoPedido extends Model
     public function pedido(): BelongsTo
     {
         return $this->belongsTo(Pedido::class, 'pedido_id');
+    }
+
+    public function usuario(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'usuario_id');
     }
 }

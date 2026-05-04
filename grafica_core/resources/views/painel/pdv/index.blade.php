@@ -384,6 +384,23 @@
         .pix-badge { display: inline-flex; align-items: center; gap: .35rem; background: #3b82f6; color: #fff; font-size: .65rem; font-weight: 800; letter-spacing: .08em; padding: .2rem .6rem; border-radius: 9999px; margin-bottom: .5rem; }
         .pix-key { font-size: .78rem; font-weight: 800; color: #1e40af; word-break: break-all; }
 
+        /* Painel de Cartão (Crédito/Débito) */
+        .card-panel { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #fbbf24; border-radius: .75rem; padding: .75rem; margin-bottom: .5rem; display: none; }
+        .card-panel.visible { display: block; animation: fadeIn .2s ease-out; }
+        .card-panel-badge { display: inline-flex; align-items: center; gap: .35rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #fff; font-size: .62rem; font-weight: 800; letter-spacing: .08em; padding: .2rem .6rem; border-radius: 9999px; margin-bottom: .6rem; }
+        .card-panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+        .card-field { display: flex; flex-direction: column; gap: .15rem; }
+        .card-label { font-size: .62rem; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: .03em; }
+        .card-input { padding: .35rem .5rem; border: 1.5px solid #fbbf24; border-radius: .5rem; font-size: .78rem; font-weight: 600; color: #78350f; background: #fff; outline: none; transition: border-color .15s, box-shadow .15s; }
+        .card-input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, .15); }
+        .card-input::placeholder { color: #d97706; opacity: .5; }
+        .card-confirm-wrap { margin-top: .6rem; padding: .5rem; background: rgba(255,255,255,.6); border-radius: .5rem; }
+        .card-confirm-label { display: flex; align-items: center; gap: .5rem; font-size: .72rem; font-weight: 600; color: #78350f; cursor: pointer; }
+        .card-confirm-label input[type="checkbox"] { width: 18px; height: 18px; accent-color: #16a34a; cursor: pointer; }
+        .card-confirm-label strong { color: #16a34a; }
+        .card-total-display { margin-top: .5rem; text-align: center; font-size: .75rem; font-weight: 700; color: #78350f; }
+        .card-total-display strong { font-size: .95rem; color: #92400e; }
+
         /* Botão finalizar */
         .btn-finalizar {
             width: 100%; padding: .875rem;
@@ -462,6 +479,124 @@
             .pdv-grid { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
             .col-left, .col-right { height: auto; max-height: 45vh; }
         }
+
+        /* ══════════════════════════════════════
+           MODAL BUSCA AVANÇADA (F3 / F6)
+        ══════════════════════════════════════ */
+        .popup-box.popup-busca { max-width: 580px; }
+        .popup-box.popup-busca-lg { max-width: 720px; }
+
+        .busca-input-wrap { position: relative; margin-bottom: 1rem; }
+        .busca-input-wrap svg {
+            position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);
+            color: #94a3b8; pointer-events: none;
+        }
+        .busca-input {
+            width: 100%; padding: .75rem 1rem .75rem 2.75rem;
+            border: 2px solid var(--pos-border); border-radius: .75rem;
+            font-size: 1rem; font-family: 'Outfit', sans-serif;
+            color: var(--pos-text); outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .busca-input:focus {
+            border-color: var(--pos-accent);
+            box-shadow: 0 0 0 4px rgba(59,130,246,.12);
+        }
+        .busca-input::placeholder { color: #94a3b8; }
+
+        .busca-results {
+            max-height: 360px; overflow-y: auto;
+            border: 1px solid var(--pos-border); border-radius: .75rem;
+            background: #fff;
+        }
+        .busca-results:empty::before {
+            content: 'Digite para buscar...';
+            display: block; padding: 2rem; text-align: center;
+            color: #94a3b8; font-size: .875rem;
+        }
+
+        .busca-item {
+            padding: .875rem 1rem; cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background .15s;
+            display: flex; align-items: flex-start; gap: .75rem;
+        }
+        .busca-item:hover, .busca-item.highlighted { background: #f0f9ff; }
+        .busca-item:last-child { border-bottom: none; }
+        .busca-item-icon {
+            width: 36px; height: 36px; border-radius: .5rem; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; background: #f1f5f9; color: #64748b;
+        }
+        .busca-item-content { flex: 1; min-width: 0; }
+        .busca-item-title {
+            font-size: .875rem; font-weight: 700; color: var(--pos-text);
+            display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+        }
+        .busca-item-info { font-size: .75rem; color: var(--pos-text-muted); margin-top: .15rem; }
+        .busca-item-meta { font-size: .7rem; color: #94a3b8; margin-top: .25rem; }
+
+        /* Badges */
+        .badge-sm {
+            font-size: .6rem; font-weight: 800; letter-spacing: .05em;
+            padding: 2px 6px; border-radius: 4px; text-transform: uppercase;
+        }
+        .badge-frequente { background: #fef3c7; color: #92400e; }
+        .badge-status {
+            font-size: .65rem; font-weight: 700; padding: 3px 8px;
+            border-radius: 9999px; white-space: nowrap;
+        }
+        .badge-status-slate { background: #f1f5f9; color: #475569; }
+        .badge-status-amber { background: #fef3c7; color: #92400e; }
+        .badge-status-blue { background: #dbeafe; color: #1e40af; }
+        .badge-status-indigo { background: #e0e7ff; color: #3730a3; }
+        .badge-status-emerald { background: #d1fae5; color: #065f46; }
+        .badge-status-cyan { background: #cffafe; color: #0e7490; }
+        .badge-status-green { background: #dcfce7; color: #166534; }
+        .badge-status-red { background: #fee2e2; color: #991b1b; }
+        .badge-status-orange { background: #ffedd5; color: #9a3412; }
+        .badge-status-gray { background: #f3f4f6; color: #4b5563; }
+
+        .busca-empty {
+            padding: 2.5rem 1rem; text-align: center; color: #94a3b8;
+        }
+        .busca-empty svg { margin: 0 auto .75rem; opacity: .5; }
+        .busca-empty p { font-size: .875rem; font-weight: 600; }
+
+        .busca-loading {
+            padding: 2rem; text-align: center; color: #64748b;
+        }
+        .busca-loading svg { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* Detalhes do pedido expandido */
+        .pedido-detalhes {
+            background: #f8fafc; border-top: 1px solid #e2e8f0;
+            padding: 1rem; margin-top: .5rem; border-radius: 0 0 .5rem .5rem;
+            display: none;
+        }
+        .pedido-detalhes.open { display: block; animation: fadeIn .2s ease-out; }
+        .pedido-detalhes-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem;
+        }
+        .pedido-detalhe-item label {
+            font-size: .65rem; font-weight: 700; color: #94a3b8;
+            text-transform: uppercase; letter-spacing: .05em;
+        }
+        .pedido-detalhe-item span { font-size: .82rem; font-weight: 600; color: var(--pos-text); display: block; }
+
+        .busca-footer {
+            margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: .5rem;
+        }
+        .busca-hint {
+            font-size: .7rem; color: #94a3b8; display: flex; align-items: center; gap: .75rem;
+        }
+        .busca-hint kbd {
+            background: #e2e8f0; padding: 2px 6px; border-radius: 4px;
+            font-size: .65rem; font-weight: 700; color: #475569;
+        }
     </style>
 
     <div class="pdv-grid" id="pdv-app">
@@ -508,15 +643,25 @@
                 </div>
                 <div class="quick-access">
 
+                    <button class="quick-btn" onclick="abrirPopup('busca-cliente')" type="button">
+                        <span class="quick-btn-icon" style="background:#f0fdf4;color:#10b981;">🔍</span>
+                        Localizar Cliente
+                        <span class="kbd">F3</span>
+                    </button>
                     <button class="quick-btn" onclick="abrirPopup('cliente')" type="button">
                         <span class="quick-btn-icon" style="background:#eff6ff;color:#3b82f6;">👤</span>
                         Novo Cliente
                         <span class="kbd">F2</span>
                     </button>
                     <button class="quick-btn" onclick="abrirPopup('produto')" type="button">
-                        <span class="quick-btn-icon" style="background:#f0fdf4;color:#10b981;">✏️</span>
+                        <span class="quick-btn-icon" style="background:#fef3c7;color:#f59e0b;">✏️</span>
                         Novo Produto Rápido
                         <span class="kbd">F4</span>
+                    </button>
+                    <button class="quick-btn" onclick="abrirPopup('busca-pedido')" type="button">
+                        <span class="quick-btn-icon" style="background:#fae8ff;color:#a855f7;">📋</span>
+                        Consultar Pedido
+                        <span class="kbd">F6</span>
                     </button>
                 </div>
                 <div class="sidebar-footer">
@@ -692,6 +837,73 @@
                         <div style="font-size:.6rem;color:#64748b;">Escaneie o código ou copie o texto acima para pagar R$ <span id="pix-display-total">0,00</span></div>
                     </div>
 
+                    {{-- Painel de Cartão (Crédito/Débito) --}}
+                    <div class="card-panel" id="card-panel">
+                        <div class="card-panel-badge" id="card-badge">CARTÃO DE CRÉDITO</div>
+                        
+                        <div class="card-panel-grid">
+                            <div class="card-field">
+                                <label class="card-label">Bandeira *</label>
+                                <select class="card-input" id="card-bandeira" required onchange="validarFinalizacao()">
+                                    <option value="">Selecione...</option>
+                                    <option value="Visa">Visa</option>
+                                    <option value="Mastercard">Mastercard</option>
+                                    <option value="Elo">Elo</option>
+                                    <option value="American Express">American Express</option>
+                                    <option value="Hipercard">Hipercard</option>
+                                    <option value="Alelo">Alelo</option>
+                                    <option value="Sodexo">Sodexo</option>
+                                    <option value="VR">VR</option>
+                                    <option value="Outra">Outra</option>
+                                </select>
+                            </div>
+                            <div class="card-field" id="card-parcelas-field">
+                                <label class="card-label">Parcelas</label>
+                                <select class="card-input" id="card-parcelas">
+                                    <option value="1">1x (à vista)</option>
+                                    <option value="2">2x</option>
+                                    <option value="3">3x</option>
+                                    <option value="4">4x</option>
+                                    <option value="5">5x</option>
+                                    <option value="6">6x</option>
+                                    <option value="7">7x</option>
+                                    <option value="8">8x</option>
+                                    <option value="9">9x</option>
+                                    <option value="10">10x</option>
+                                    <option value="11">11x</option>
+                                    <option value="12">12x</option>
+                                </select>
+                            </div>
+                            <div class="card-field">
+                                <label class="card-label">NSU (Comprovante) *</label>
+                                <input type="text" class="card-input" id="card-nsu" placeholder="Ex: 123456789" maxlength="20" autocomplete="off" oninput="validarFinalizacao()">
+                            </div>
+                            <div class="card-field">
+                                <label class="card-label">Cód. Autorização</label>
+                                <input type="text" class="card-input" id="card-autorizacao" placeholder="Opcional" maxlength="20" autocomplete="off">
+                            </div>
+                            <div class="card-field" style="grid-column: 1 / -1;">
+                                <label class="card-label">Terminal / Maquininha</label>
+                                <input type="text" class="card-input" id="card-terminal" placeholder="Ex: POS-001, Balcão 2" maxlength="50" autocomplete="off">
+                            </div>
+                            <div class="card-field" style="grid-column: 1 / -1;">
+                                <label class="card-label">Observação</label>
+                                <input type="text" class="card-input" id="card-obs" placeholder="Anotações opcionais" maxlength="100" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="card-confirm-wrap">
+                            <label class="card-confirm-label">
+                                <input type="checkbox" id="card-confirmado" onchange="validarFinalizacao()">
+                                <span>Confirmo que o pagamento foi <strong>aprovado</strong> na maquininha</span>
+                            </label>
+                        </div>
+
+                        <div class="card-total-display">
+                            Valor: <strong>R$ <span id="card-display-total">0,00</span></strong>
+                        </div>
+                    </div>
+
                     <button class="btn-finalizar" id="btn-finalizar" onclick="finalizarVenda()" disabled type="button">
                         <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
@@ -739,6 +951,67 @@
             <div class="popup-footer">
                 <button type="button" class="popup-btn popup-btn-primary" onclick="salvarClienteRapido()">
                     Cadastrar e Selecionar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══════════════════════════════════════════
+         POPUP — NOVO PRODUTO RÁPIDO (F4)
+    ═══════════════════════════════════════════ --}}
+    <div class="popup-overlay" id="popup-produto" role="dialog" aria-labelledby="popup-produto-title" aria-modal="true">
+        <div class="popup-box" style="max-width:440px;">
+            <div class="popup-head">
+                <div style="display:flex;align-items:center;gap:.5rem;">
+                    <span class="popup-title" id="popup-produto-title">Produto Rápido</span>
+                    <span class="popup-shortcut">F4</span>
+                </div>
+                <button class="popup-close" onclick="fecharPopup('produto')" type="button" aria-label="Fechar">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="popup-body">
+                <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:.625rem;padding:.5rem .75rem;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;">
+                    <span style="font-size:1rem;">🔒</span>
+                    <span style="font-size:.72rem;font-weight:600;color:#92400e;">Produto interno — não aparece no catálogo público. Pode ser editado depois no painel.</span>
+                </div>
+                <form id="form-produto-rapido" novalidate>
+                    <div style="margin-bottom:.875rem;">
+                        <label class="popup-label" for="fp-nome">Descrição / Nome *</label>
+                        <input type="text" class="popup-input" id="fp-nome" name="nome" required placeholder="Ex: Banner 1x2m, Adesivo recorte..." autocomplete="off">
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.875rem;">
+                        <div>
+                            <label class="popup-label" for="fp-preco">Preço (R$) *</label>
+                            <input type="number" class="popup-input" id="fp-preco" name="preco" required step="0.01" min="0" placeholder="0,00" style="font-weight:800;color:var(--brand-primary);">
+                        </div>
+                        <div>
+                            <label class="popup-label" for="fp-tipo">Tipo *</label>
+                            <select class="popup-input" id="fp-tipo" name="tipo" style="font-weight:700;">
+                                <option value="produto">Produto</option>
+                                <option value="servico">Serviço</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="popup-label" for="fp-categoria">Categoria (Opcional)</label>
+                        <select class="popup-input" id="fp-categoria" name="categoria_id">
+                            <option value="">— Sem categoria —</option>
+                            @foreach($categorias as $cat)
+                                <option value="{{ $cat->id }}">{{ $cat->nome }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="popup-footer">
+                <button type="button" class="popup-btn popup-btn-success" onclick="salvarProdutoRapido()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Criar e Adicionar ao Carrinho
                 </button>
             </div>
         </div>
@@ -834,6 +1107,88 @@
         </div>
     </div>
 
+    {{-- ═══════════════════════════════════════════
+         POPUP — BUSCA DE CLIENTE (F3)
+    ═══════════════════════════════════════════ --}}
+    <div class="popup-overlay" id="popup-busca-cliente" role="dialog" aria-labelledby="popup-busca-cliente-title" aria-modal="true">
+        <div class="popup-box popup-busca">
+            <div class="popup-head">
+                <div style="display:flex;align-items:center;gap:.5rem;">
+                    <span class="popup-title" id="popup-busca-cliente-title">Localizar Cliente</span>
+                    <span class="popup-shortcut">F3</span>
+                </div>
+                <button class="popup-close" onclick="fecharPopup('busca-cliente')" type="button" aria-label="Fechar">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="popup-body">
+                <div class="busca-input-wrap">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input type="text" class="busca-input" id="busca-cliente-input" 
+                           placeholder="Digite nome, WhatsApp, CPF/CNPJ ou e-mail..." autocomplete="off">
+                </div>
+                <div class="busca-results" id="busca-cliente-results"></div>
+                <div class="busca-footer">
+                    <div class="busca-hint">
+                        <span><kbd>↑</kbd><kbd>↓</kbd> Navegar</span>
+                        <span><kbd>Enter</kbd> Selecionar</span>
+                        <span><kbd>Esc</kbd> Fechar</span>
+                    </div>
+                    <button type="button" class="btn-link" onclick="fecharPopup('busca-cliente'); abrirPopup('cliente');" style="font-size:.75rem;">
+                        + Cadastrar Novo Cliente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══════════════════════════════════════════
+         POPUP — BUSCA DE PEDIDO/STATUS (F6)
+    ═══════════════════════════════════════════ --}}
+    <div class="popup-overlay" id="popup-busca-pedido" role="dialog" aria-labelledby="popup-busca-pedido-title" aria-modal="true">
+        <div class="popup-box popup-busca-lg">
+            <div class="popup-head">
+                <div style="display:flex;align-items:center;gap:.5rem;">
+                    <span class="popup-title" id="popup-busca-pedido-title">Consultar Pedido</span>
+                    <span class="popup-shortcut">F6</span>
+                </div>
+                <button class="popup-close" onclick="fecharPopup('busca-pedido')" type="button" aria-label="Fechar">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="popup-body">
+                <div class="busca-input-wrap">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input type="text" class="busca-input" id="busca-pedido-input" 
+                           placeholder="Nº do pedido (ex: 42), código, nome ou WhatsApp..." autocomplete="off">
+                </div>
+                <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;">
+                    <label style="display:flex;align-items:center;gap:.35rem;font-size:.75rem;color:#64748b;cursor:pointer;">
+                        <input type="checkbox" id="busca-pedido-finalizados" style="accent-color:var(--pos-accent);">
+                        Incluir pedidos entregues
+                    </label>
+                </div>
+                <div class="busca-results" id="busca-pedido-results" style="max-height:320px;"></div>
+                <div class="busca-footer">
+                    <div class="busca-hint">
+                        <span><kbd>↑</kbd><kbd>↓</kbd> Navegar</span>
+                        <span><kbd>Enter</kbd> Ver Detalhes</span>
+                        <span><kbd>Esc</kbd> Fechar</span>
+                    </div>
+                    <span style="font-size:.7rem;color:#94a3b8;">Mostrando apenas pedidos ativos</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Gerador de QR Code --}}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     @push('scripts')
@@ -850,7 +1205,7 @@
         cliente: null, cart: [], metodo: null,
         subtotal: 0, total: 0, desconto: 0, acrescimo: 0,
         recebido: 0, troco: 0,
-        allProducts: [], activeCategory: 'all',
+        allProducts: [], allClients: [], activeCategory: 'all',
         pix: {
             chave: @json($pixConfig['chave'] ?? ''),
             beneficiario: @json($pixConfig['beneficiario'] ?? 'Grafica Vapt Vupt'),
@@ -928,15 +1283,40 @@
     });
 
     // ══════════════════════════════
+    //  TRATAMENTO DE ERROS DE API
+    // ══════════════════════════════
+    /**
+     * Trata resposta da API e verifica erros de assinatura/sessão.
+     * Retorna true se houve erro que deve interromper o fluxo.
+     */
+    function handleApiError(json) {
+        if (!json.success && json.error_code) {
+            const messages = {
+                'SUBSCRIPTION_EXPIRED': '⚠️ Sua assinatura expirou!\n\nRenove para continuar usando o PDV.',
+                'SESSION_EXPIRED': '⚠️ Sessão expirada!\n\nFaça login novamente.',
+                'STORE_BLOCKED': '⚠️ Loja bloqueada!\n\nEntre em contato com o suporte.'
+            };
+            
+            const msg = messages[json.error_code] || json.message || 'Erro desconhecido.';
+            
+            if (confirm(msg + '\n\nDeseja ser redirecionado?') && json.redirect) {
+                window.location.href = json.redirect;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    // ══════════════════════════════
     //  POPUPS (CLIENTE / PRODUTO)
     // ══════════════════════════════
     function abrirPopup(tipo) {
         const popup = document.getElementById(`popup-${tipo}`);
         if (!popup) return;
         popup.classList.add('active');
-        // Foco automático no primeiro campo
+        // Foco automático no primeiro campo (suporta popup-input e busca-input)
         setTimeout(() => {
-            const first = popup.querySelector('.popup-input');
+            const first = popup.querySelector('.busca-input, .popup-input');
             if (first) first.focus();
         }, 100);
     }
@@ -945,6 +1325,15 @@
         const popup = document.getElementById(`popup-${tipo}`);
         if (popup && popup.dataset.force !== 'true') {
             popup.classList.remove('active');
+            // Limpar campos de busca ao fechar
+            if (tipo === 'busca-cliente') {
+                document.getElementById('busca-cliente-input').value = '';
+                document.getElementById('busca-cliente-results').innerHTML = '';
+            }
+            if (tipo === 'busca-pedido') {
+                document.getElementById('busca-pedido-input').value = '';
+                document.getElementById('busca-pedido-results').innerHTML = '';
+            }
         }
     }
 
@@ -989,8 +1378,10 @@
             }
         }
 
+        if (e.key === 'F3') { e.preventDefault(); abrirPopup('busca-cliente'); }
         if (e.key === 'F4') { e.preventDefault(); abrirPopup('produto'); }
         if (e.key === 'F5') { e.preventDefault(); document.getElementById('search-produto').focus(); }
+        if (e.key === 'F6') { e.preventDefault(); abrirPopup('busca-pedido'); }
         if (e.key === 'F7') { e.preventDefault(); prepararFechamento(); }
         if (e.key === 'F8' && !document.getElementById('btn-finalizar').disabled) {
             e.preventDefault(); finalizarVenda();
@@ -1074,19 +1465,43 @@
     }
 
     // ══════════════════════════════
-    //  BUSCA DINÂMICA
+    //  BUSCA DINÂMICA (SERVER-SIDE)
     // ══════════════════════════════
+    let searchTimeout = null;
+
     function inicializarBuscas() {
-        // BUSCA CLIENTE (3 letras = sugestão)
-        let cTimer;
         const cInput = document.getElementById('search-cliente');
         const cResults = document.getElementById('results-cliente');
 
         cInput.addEventListener('input', e => {
-            clearTimeout(cTimer);
             const q = e.target.value.trim();
-            if (q.length < 3) { fecharDropdown(cResults); return; }
-            cTimer = setTimeout(() => buscarClientes(q), 200);
+            
+            // Limpa o timeout anterior (Debounce)
+            if (searchTimeout) clearTimeout(searchTimeout);
+
+            if (q.length < 2) { 
+                fecharDropdown(cResults); 
+                return; 
+            }
+
+            // Mostra estado de carregamento
+            cResults.innerHTML = `
+                <div class="dd-item" style="pointer-events:none; opacity:.7;">
+                    <div class="dd-name" style="display:flex; align-items:center; gap:.5rem;">
+                        <svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"></circle>
+                            <path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Buscando cliente...
+                    </div>
+                </div>
+            `;
+            cResults.classList.add('open');
+
+            // Agenda a busca para 300ms após o pararem de digitar
+            searchTimeout = setTimeout(() => {
+                buscarClientesNoServidor(q);
+            }, 300);
         });
 
         document.addEventListener('click', e => {
@@ -1112,37 +1527,47 @@
         });
     }
 
-    async function buscarClientes(q) {
+    async function buscarClientesNoServidor(q) {
+        const box = document.getElementById('results-cliente');
         try {
             const res = await fetch(`{{ route('admin.pos.clientes') }}?q=${encodeURIComponent(q)}`);
             const clientes = await res.json();
-            const box = document.getElementById('results-cliente');
             
             let html = '';
             if (clientes.length) {
                 html = clientes.map(c => {
                     const cJson = JSON.stringify(c).replace(/'/g, '&#39;');
+                    const info = [c.whatsapp, c.email, c.cpf_cnpj].filter(Boolean).join(' · ');
                     return `
                     <div class="dd-item" onclick='selecionarCliente(${cJson})' role="button" tabindex="0">
                         <div class="dd-name">${esc(c.nome)}</div>
-                        <div class="dd-info">${esc(c.whatsapp || '')} ${c.email ? '· '+esc(c.email) : ''} ${c.cpf_cnpj ? '· '+esc(c.cpf_cnpj) : ''}</div>
+                        <div class="dd-info">${esc(info)}</div>
                     </div>`;
                 }).join('');
+            } else {
+                html = `
+                    <div class="dd-item" style="pointer-events:none; background:#fffaf5;">
+                        <div class="dd-name" style="color:#f59e0b;">Nenhum cliente encontrado</div>
+                        <div class="dd-info">Verifique a grafia ou cadastre um novo.</div>
+                    </div>
+                `;
             }
 
-            // Sempre adicionar a opção de cadastro rápido no final se houver termo
+            // Opção de cadastro rápido sempre disponível
             html += `
                 <div class="dd-item" onclick="abrirPopupCadastroComNome()" style="background: #f0f9ff; border-top: 1px dashed #bfdbfe;">
                     <div class="dd-name" style="color: #2563eb; display: flex; align-items: center; gap: .5rem;">
-                        <span>👤</span>
-                        ${clientes.length ? 'Não encontrou? Cadastrar novo' : 'Cliente não encontrado. Cadastrar?'}
+                        <span style="font-size:1.1rem;">👤</span>
+                        ${clientes.length ? 'Não encontrou? Cadastrar Novo' : 'Cadastrar novo cliente agora'}
                     </div>
                     <div class="dd-info">Pressione <strong style="color:#1d4ed8">F2</strong> para cadastrar "${esc(q)}"</div>
                 </div>`;
 
             box.innerHTML = html;
             box.classList.add('open');
-        } catch(e) { fecharDropdown(document.getElementById('results-cliente')); }
+        } catch (e) {
+            box.innerHTML = '<div class="dd-item" style="color:#ef4444;">Erro ao buscar clientes.</div>';
+        }
     }
 
     function abrirPopupCadastroComNome() {
@@ -1160,6 +1585,308 @@
     }
 
     function fecharDropdown(el) { el.classList.remove('open'); }
+
+    // ══════════════════════════════
+    //  BUSCA AVANÇADA DE CLIENTE (F3)
+    // ══════════════════════════════
+    let buscaClienteTimeout = null;
+    let buscaClienteHighlightIndex = -1;
+
+    function initBuscaClienteModal() {
+        const input = document.getElementById('busca-cliente-input');
+        const results = document.getElementById('busca-cliente-results');
+        
+        if (!input) return;
+
+        input.addEventListener('input', () => {
+            if (buscaClienteTimeout) clearTimeout(buscaClienteTimeout);
+            const q = input.value.trim();
+            
+            if (q.length < 2) {
+                results.innerHTML = '';
+                return;
+            }
+
+            results.innerHTML = `
+                <div class="busca-loading">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    <p style="margin-top:.5rem;font-size:.82rem;">Buscando...</p>
+                </div>`;
+
+            buscaClienteTimeout = setTimeout(() => executarBuscaCliente(q), 300);
+        });
+
+        // Navegação por teclado
+        input.addEventListener('keydown', e => {
+            const items = results.querySelectorAll('.busca-item[data-cliente]');
+            if (!items.length) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                buscaClienteHighlightIndex = Math.min(buscaClienteHighlightIndex + 1, items.length - 1);
+                highlightBuscaItem(items, buscaClienteHighlightIndex);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                buscaClienteHighlightIndex = Math.max(buscaClienteHighlightIndex - 1, 0);
+                highlightBuscaItem(items, buscaClienteHighlightIndex);
+            } else if (e.key === 'Enter' && buscaClienteHighlightIndex >= 0) {
+                e.preventDefault();
+                items[buscaClienteHighlightIndex]?.click();
+            }
+        });
+    }
+
+    async function executarBuscaCliente(q) {
+        const results = document.getElementById('busca-cliente-results');
+        buscaClienteHighlightIndex = -1;
+
+        try {
+            const res = await fetch(`{{ route('admin.pos.clientes') }}?q=${encodeURIComponent(q)}`);
+            const clientes = await res.json();
+
+            if (!clientes.length) {
+                results.innerHTML = `
+                    <div class="busca-empty">
+                        <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p>Nenhum cliente encontrado</p>
+                        <button type="button" class="btn-link" onclick="fecharPopup('busca-cliente'); abrirPopup('cliente');" style="margin-top:.75rem;font-size:.82rem;">
+                            + Cadastrar "${esc(q)}"
+                        </button>
+                    </div>`;
+                return;
+            }
+
+            results.innerHTML = clientes.map((c, i) => {
+                const cJson = JSON.stringify(c).replace(/'/g, '&#39;');
+                const infos = [c.whatsapp, c.cpf_cnpj, c.email].filter(Boolean);
+                const meta = [c.cidade, c.empresa].filter(Boolean).join(' · ');
+                return `
+                    <div class="busca-item" data-cliente="${i}" onclick='selecionarClienteModal(${cJson})'>
+                        <div class="busca-item-icon" style="${c.is_frequente ? 'background:#fef3c7;color:#f59e0b;' : ''}">
+                            ${c.is_frequente ? '⭐' : '👤'}
+                        </div>
+                        <div class="busca-item-content">
+                            <div class="busca-item-title">
+                                ${esc(c.nome)}
+                                ${c.is_frequente ? '<span class="badge-sm badge-frequente">Frequente</span>' : ''}
+                            </div>
+                            <div class="busca-item-info">${esc(infos.join(' · '))}</div>
+                            ${meta ? `<div class="busca-item-meta">${esc(meta)}</div>` : ''}
+                        </div>
+                        <div style="font-size:.7rem;color:#94a3b8;">${c.pedidos_count || 0} pedidos</div>
+                    </div>`;
+            }).join('');
+        } catch (e) {
+            results.innerHTML = '<div class="busca-empty"><p style="color:#ef4444;">Erro ao buscar clientes</p></div>';
+        }
+    }
+
+    function selecionarClienteModal(c) {
+        selecionarCliente(c);
+        fecharPopup('busca-cliente');
+        document.getElementById('busca-cliente-input').value = '';
+        document.getElementById('busca-cliente-results').innerHTML = '';
+    }
+
+    // ══════════════════════════════
+    //  BUSCA DE PEDIDOS/STATUS (F6)
+    // ══════════════════════════════
+    let buscaPedidoTimeout = null;
+    let buscaPedidoHighlightIndex = -1;
+
+    function initBuscaPedidoModal() {
+        const input = document.getElementById('busca-pedido-input');
+        const results = document.getElementById('busca-pedido-results');
+        const checkFinalizados = document.getElementById('busca-pedido-finalizados');
+        
+        if (!input) return;
+
+        input.addEventListener('input', () => {
+            if (buscaPedidoTimeout) clearTimeout(buscaPedidoTimeout);
+            const q = input.value.trim();
+            
+            // Permite busca com 1 caractere se for numérico (busca por sequencial)
+            const minLength = /^\d+$/.test(q) ? 1 : 2;
+            if (q.length < minLength) {
+                results.innerHTML = '';
+                return;
+            }
+
+            results.innerHTML = `
+                <div class="busca-loading">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    <p style="margin-top:.5rem;font-size:.82rem;">Buscando pedidos...</p>
+                </div>`;
+
+            buscaPedidoTimeout = setTimeout(() => executarBuscaPedido(q), 300);
+        });
+
+        // Ao mudar checkbox, refaz busca
+        checkFinalizados?.addEventListener('change', () => {
+            const q = input.value.trim();
+            const minLength = /^\d+$/.test(q) ? 1 : 2;
+            if (q.length >= minLength) executarBuscaPedido(q);
+        });
+
+        // Navegação por teclado
+        input.addEventListener('keydown', e => {
+            const items = results.querySelectorAll('.busca-item[data-pedido]');
+            if (!items.length) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                buscaPedidoHighlightIndex = Math.min(buscaPedidoHighlightIndex + 1, items.length - 1);
+                highlightBuscaItem(items, buscaPedidoHighlightIndex);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                buscaPedidoHighlightIndex = Math.max(buscaPedidoHighlightIndex - 1, 0);
+                highlightBuscaItem(items, buscaPedidoHighlightIndex);
+            } else if (e.key === 'Enter' && buscaPedidoHighlightIndex >= 0) {
+                e.preventDefault();
+                toggleDetalhesPedido(buscaPedidoHighlightIndex);
+            }
+        });
+    }
+
+    async function executarBuscaPedido(q) {
+        const results = document.getElementById('busca-pedido-results');
+        const incluirFinalizados = document.getElementById('busca-pedido-finalizados')?.checked || false;
+        buscaPedidoHighlightIndex = -1;
+
+        try {
+            const url = `{{ route('admin.pos.pedidos') }}?q=${encodeURIComponent(q)}&incluir_finalizados=${incluirFinalizados ? '1' : '0'}`;
+            const res = await fetch(url);
+            const pedidos = await res.json();
+
+            if (!pedidos.length) {
+                results.innerHTML = `
+                    <div class="busca-empty">
+                        <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p>Nenhum pedido encontrado</p>
+                        <span style="font-size:.75rem;color:#94a3b8;margin-top:.25rem;">
+                            ${incluirFinalizados ? 'Tente outro termo de busca' : 'Tente marcar "Incluir pedidos entregues"'}
+                        </span>
+                    </div>`;
+                return;
+            }
+
+            results.innerHTML = pedidos.map((p, i) => {
+                return `
+                    <div class="busca-item" data-pedido="${i}" onclick="toggleDetalhesPedido(${i})" style="flex-wrap:wrap;">
+                        <div class="busca-item-icon" style="background:#f0f9ff;color:#3b82f6;">📋</div>
+                        <div class="busca-item-content" style="flex:1;min-width:200px;">
+                            <div class="busca-item-title">
+                                <strong>${esc(p.numero_balcao || '#' + p.numero)}</strong>
+                                <span class="badge-status badge-status-${p.status_cor}">${esc(p.status_label)}</span>
+                            </div>
+                            <div class="busca-item-info">
+                                ${p.cliente ? esc(p.cliente.nome) : 'Cliente não identificado'}
+                                ${p.cliente?.whatsapp ? ` · ${esc(p.cliente.whatsapp)}` : ''}
+                            </div>
+                            <div class="busca-item-meta">
+                                ${esc(p.data_relativa)} · R$ ${p.total.toLocaleString('pt-BR', {minimumFractionDigits:2})}
+                                ${p.prazo_entrega ? ` · Entrega: ${esc(p.prazo_entrega)}` : ''}
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:.5rem;align-items:center;">
+                            <button type="button" class="btn-link" onclick="event.stopPropagation(); abrirPedidoNovo(${p.id});" title="Abrir pedido completo" style="font-size:.7rem;">
+                                Abrir ↗
+                            </button>
+                        </div>
+                        <div class="pedido-detalhes" id="pedido-detalhe-${i}" style="width:100%;">
+                            <div class="pedido-detalhes-grid">
+                                <div class="pedido-detalhe-item">
+                                    <label>Código de Acompanhamento</label>
+                                    <span>${p.codigo_pedido || p.codigo_acompanhamento || '—'}</span>
+                                </div>
+                                <div class="pedido-detalhe-item">
+                                    <label>Data do Pedido</label>
+                                    <span>${esc(p.data_pedido)}</span>
+                                </div>
+                                <div class="pedido-detalhe-item">
+                                    <label>CPF/CNPJ</label>
+                                    <span>${p.cliente?.cpf_cnpj || '—'}</span>
+                                </div>
+                                <div class="pedido-detalhe-item">
+                                    <label>Atendente</label>
+                                    <span>${p.atendente || '—'}</span>
+                                </div>
+                                ${p.observacoes ? `
+                                <div class="pedido-detalhe-item" style="grid-column:1/-1;">
+                                    <label>Observações</label>
+                                    <span>${esc(p.observacoes)}</span>
+                                </div>` : ''}
+                            </div>
+                            <div style="margin-top:.75rem;display:flex;gap:.5rem;justify-content:flex-end;">
+                                <button type="button" class="popup-btn popup-btn-primary" onclick="copiarStatusPedido(${JSON.stringify(p).replace(/"/g, '&quot;')})" style="padding:.5rem 1rem;font-size:.75rem;">
+                                    📋 Copiar Status
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+        } catch (e) {
+            console.error('Erro busca pedidos:', e);
+            results.innerHTML = '<div class="busca-empty"><p style="color:#ef4444;">Erro ao buscar pedidos</p></div>';
+        }
+    }
+
+    function toggleDetalhesPedido(index) {
+        const el = document.getElementById(`pedido-detalhe-${index}`);
+        if (el) {
+            // Fecha outros abertos
+            document.querySelectorAll('.pedido-detalhes.open').forEach(d => {
+                if (d.id !== `pedido-detalhe-${index}`) d.classList.remove('open');
+            });
+            el.classList.toggle('open');
+        }
+    }
+
+    function copiarStatusPedido(pedido) {
+        const codigo = pedido.codigo_pedido || pedido.numero;
+        const numBalcao = pedido.numero_balcao || '#' + pedido.numero_sequencial || '';
+        const texto = `Pedido ${numBalcao}\nCódigo: ${codigo}\nStatus: ${pedido.status_label}\nCliente: ${pedido.cliente?.nome || '—'}\nValor: R$ ${pedido.total.toLocaleString('pt-BR', {minimumFractionDigits:2})}${pedido.prazo_entrega ? '\nPrevisão: ' + pedido.prazo_entrega : ''}`;
+        
+        navigator.clipboard.writeText(texto).then(() => {
+            // Feedback visual
+            const btn = event.target;
+            const original = btn.innerHTML;
+            btn.innerHTML = '✓ Copiado!';
+            btn.style.background = '#10b981';
+            setTimeout(() => {
+                btn.innerHTML = original;
+                btn.style.background = '';
+            }, 1500);
+        }).catch(() => {
+            alert('Não foi possível copiar. Texto:\n\n' + texto);
+        });
+    }
+
+    function abrirPedidoNovo(pedidoId) {
+        // Abre a página de detalhes do pedido em nova aba
+        window.open(`/admin/pedidos/${pedidoId}`, '_blank');
+    }
+
+    function highlightBuscaItem(items, index) {
+        items.forEach((item, i) => {
+            item.classList.toggle('highlighted', i === index);
+            if (i === index) item.scrollIntoView({ block: 'nearest' });
+        });
+    }
+
+    // Inicializar modais de busca quando o DOM carregar
+    document.addEventListener('DOMContentLoaded', () => {
+        initBuscaClienteModal();
+        initBuscaPedidoModal();
+    });
 
     // ══════════════════════════════
     //  CLIENTE
@@ -1283,6 +2010,11 @@
         
         if (state.metodo === 'Pix') atualizarQRCodePix();
         
+        // Atualizar display do cartão se estiver visível
+        if (state.metodo === 'Cartão de Crédito' || state.metodo === 'Cartão de Débito') {
+            document.getElementById('card-display-total').textContent = state.total.toLocaleString('pt-BR', {minimumFractionDigits:2});
+        }
+        
         calcularTroco(); validarFinalizacao();
     }
 
@@ -1337,6 +2069,22 @@
         document.getElementById('cash-panel').classList.toggle('visible', m === 'Dinheiro');
         document.getElementById('pix-panel').classList.toggle('visible', m === 'Pix');
         
+        // Cartão de Crédito ou Débito
+        const isCartao = m === 'Cartão de Crédito' || m === 'Cartão de Débito';
+        const cardPanel = document.getElementById('card-panel');
+        cardPanel.classList.toggle('visible', isCartao);
+        
+        if (isCartao) {
+            document.getElementById('card-badge').textContent = m.toUpperCase();
+            document.getElementById('card-display-total').textContent = state.total.toLocaleString('pt-BR', {minimumFractionDigits:2});
+            // Débito: sem parcelas (sempre 1x)
+            const parcelasField = document.getElementById('card-parcelas-field');
+            parcelasField.style.display = m === 'Cartão de Débito' ? 'none' : 'block';
+            if (m === 'Cartão de Débito') document.getElementById('card-parcelas').value = '1';
+            // Reset checkbox
+            document.getElementById('card-confirmado').checked = false;
+        }
+        
         if (m === 'Pix') atualizarQRCodePix();
         
         validarFinalizacao();
@@ -1352,16 +2100,21 @@
         try {
             const res = await fetch("{{ route('admin.pos.cliente-rapido') }}", {
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' },
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify(data)
             });
             const json = await res.json();
+            if (handleApiError(json)) return;
             if (json.success) {
                 selecionarCliente(json.cliente);
                 fecharPopup('cliente');
                 form.reset();
+                await carregarClientes();
             } else alert(json.message || 'Erro ao cadastrar.');
-        } catch(e) { alert('Falha na conexão.'); }
+        } catch(e) { 
+            console.error('Erro ao cadastrar cliente:', e);
+            alert('Falha na conexão. Verifique sua internet e tente novamente.'); 
+        }
     }
 
     async function salvarProdutoRapido() {
@@ -1371,17 +2124,21 @@
         try {
             const res = await fetch("{{ route('admin.pos.produto-rapido') }}", {
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' },
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify(data)
             });
             const json = await res.json();
+            if (handleApiError(json)) return;
             if (json.success) {
                 adicionarAoCarrinho(json.produto);
                 fecharPopup('produto');
                 form.reset();
                 await carregarCatalogo();
             } else alert(json.message || 'Erro ao salvar.');
-        } catch(e) { alert('Falha na conexão.'); }
+        } catch(e) { 
+            console.error('Erro ao cadastrar produto:', e);
+            alert('Falha na conexão. Verifique sua internet e tente novamente.'); 
+        }
     }
 
     // ══════════════════════════════
@@ -1401,13 +2158,15 @@
         try {
             const res = await fetch("{{ route('admin.pos.caixa.abrir') }}", {
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' },
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify({ 
                     valor_inicial: valor,
                     usuario_id: usuarioId
                 })
             });
             const json = await res.json();
+            
+            if (handleApiError(json)) { restaurarBotaoAbertura(btn); return; }
             
             if (json.success) {
                 // Fechar modal antes de recarregar para feedback imediato
@@ -1424,7 +2183,8 @@
                 restaurarBotaoAbertura(btn);
             }
         } catch(e) { 
-            alert('Falha na conexão com o servidor.'); 
+            console.error('Erro ao abrir caixa:', e);
+            alert('Falha na conexão com o servidor. Verifique sua internet e tente novamente.'); 
             restaurarBotaoAbertura(btn);
         }
     }
@@ -1473,20 +2233,33 @@
         try {
             const res = await fetch("{{ route('admin.pos.caixa.fechar') }}", {
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' },
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify({ valor_fechamento: valor, observacoes: obs })
             });
             const json = await res.json();
+            if (handleApiError(json)) return;
             if (json.success) {
                 alert(`Caixa fechado com sucesso!\nTotal de Vendas: R$ ${json.resumo.vendas.toFixed(2)}\nDiferença: R$ ${json.resumo.diferenca.toFixed(2)}`);
                 window.location.reload();
             } else {
                 alert(json.message || 'Erro ao fechar caixa.');
             }
-        } catch(e) { alert('Falha na conexão.'); }
+        } catch(e) { 
+            console.error('Erro ao fechar caixa:', e);
+            alert('Falha na conexão. Verifique sua internet e tente novamente.'); 
+        }
     }
     function validarFinalizacao() {
-        const ok = state.cart.length > 0 && state.cliente !== null && state.metodo !== null;
+        let ok = state.cart.length > 0 && state.cliente !== null && state.metodo !== null;
+        
+        // Validação extra para cartão: precisa confirmar na maquininha + preencher campos obrigatórios
+        if (ok && (state.metodo === 'Cartão de Crédito' || state.metodo === 'Cartão de Débito')) {
+            const confirmado = document.getElementById('card-confirmado').checked;
+            const bandeira = document.getElementById('card-bandeira').value;
+            const nsu = document.getElementById('card-nsu').value.trim();
+            ok = confirmado && bandeira && nsu;
+        }
+        
         document.getElementById('btn-finalizar').disabled = !ok;
     }
 
@@ -1496,10 +2269,26 @@
         btn.disabled = true;
         btn.innerHTML = `<svg class="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg> PROCESSANDO...`;
 
+        // Montar dados do pagamento
+        const pagamentoData = { metodo: state.metodo, valor: state.total };
+        
+        // Se for cartão, incluir dados adicionais
+        if (state.metodo === 'Cartão de Crédito' || state.metodo === 'Cartão de Débito') {
+            pagamentoData.card_data = {
+                bandeira: document.getElementById('card-bandeira').value,
+                parcelas: parseInt(document.getElementById('card-parcelas').value) || 1,
+                nsu: document.getElementById('card-nsu').value.trim(),
+                codigo_autorizacao: document.getElementById('card-autorizacao').value.trim(),
+                terminal_id: document.getElementById('card-terminal').value.trim(),
+                observacao: document.getElementById('card-obs').value.trim(),
+                operador_confirmou: document.getElementById('card-confirmado').checked
+            };
+        }
+
         const payload = {
             cliente_id: state.cliente.id,
             itens: state.cart,
-            pagamentos: [{ metodo: state.metodo, valor: state.total }],
+            pagamentos: [pagamentoData],
             desconto: state.desconto,
             acrescimo: state.acrescimo,
             valor_recebido: state.recebido,
@@ -1511,13 +2300,18 @@
         try {
             const res = await fetch("{{ route('admin.pos.finalizar') }}", {
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' },
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify(payload)
             });
             const json = await res.json();
+            if (handleApiError(json)) { restaurarBtn(); return; }
             if (json.success) { window.open(json.os_url, '_blank'); window.location.reload(); }
             else { alert('Erro: ' + (json.message || 'Falha.')); restaurarBtn(); }
-        } catch(e) { alert('Falha na conexão.'); restaurarBtn(); }
+        } catch(e) { 
+            console.error('Erro ao finalizar venda:', e);
+            alert('Falha na conexão. Verifique sua internet e tente novamente.'); 
+            restaurarBtn(); 
+        }
     }
 
     function restaurarBtn() {

@@ -23,7 +23,7 @@
         <div class="flex-grow min-w-0">
             {{-- Header: ID e WhatsApp --}}
             <div class="flex items-center justify-between mb-2">
-                <span class="text-[10px] font-black text-slate-700 uppercase tracking-tighter">#{{ $order->numero ?? $order->id }} - <span class="text-slate-500 font-bold truncate max-w-[150px] inline-block align-bottom">{{ $order->cliente->nome }}</span></span>
+                <span class="text-[10px] font-black text-slate-700 uppercase tracking-tighter" title="{{ $order->codigo_pedido ?? $order->numero }}">{{ $order->numero_balcao ?? '#' . ($order->numero ?? $order->id) }} - <span class="text-slate-500 font-bold truncate max-w-[150px] inline-block align-bottom">{{ $order->cliente->nome }}</span></span>
                 
                 <div class="flex items-center gap-1.5">
                     @if($itemComArte)

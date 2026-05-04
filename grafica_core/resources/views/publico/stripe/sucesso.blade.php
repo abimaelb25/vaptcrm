@@ -193,7 +193,7 @@
             <div class="info-box">
                 <div class="info-row">
                     <span class="info-label">Pedido</span>
-                    <span class="info-value">#{{ $pedido->numero }}</span>
+                    <span class="info-value">{{ $pedido->codigo_pedido ?? '#' . $pedido->numero }}</span>
                 </div>
                 @if($pedido->total)
                 <div class="info-row">

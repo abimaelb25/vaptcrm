@@ -20,8 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Adiciona TenantDiscovery antes do SubstituteBindings para resolver tenant primeiro
-        $middleware->prependToGroup('web', \App\Http\Middleware\SaaS\TenantDiscoveryMiddleware::class);
+        // TenantDiscovery deve rodar APÓS StartSession para podermos persistir a loja na sessão (útil em dev local/127.0.0.1)
+        // No Laravel 12, appendToGroup adiciona ao final do grupo 'web', que já possui a sessão inicializada.
+        $middleware->appendToGroup('web', \App\Http\Middleware\SaaS\TenantDiscoveryMiddleware::class);
 
         $middleware->redirectUsersTo('/painel');
         $middleware->redirectGuestsTo('/entrar');
@@ -31,6 +32,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'assinatura' => \App\Http\Middleware\SaaS\VerificarAssinatura::class,
             'super_admin' => \App\Http\Middleware\SaaS\VerificarSuperAdmin::class,
             'tenant' => \App\Http\Middleware\SaaS\TenantDiscoveryMiddleware::class,
+            'check_plan_feature' => \App\Http\Middleware\SaaS\CheckPlanFeature::class,
+            'check_plan_limit' => \App\Http\Middleware\SaaS\CheckPlanLimit::class,
+            'check_storage_limit' => \App\Http\Middleware\SaaS\CheckStorageLimit::class,
         ]);
 
         // Exclui CSRF para webhooks externos

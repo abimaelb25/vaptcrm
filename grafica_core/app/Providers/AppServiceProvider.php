@@ -7,10 +7,11 @@ namespace App\Providers;
 /*
 | Autoria: Abimael Borges
 | Site: https://abimaelborges.adv.br
-| Modificado em: 2026-04-04 20:11 -03:00
+| Modificado em: 2026-04-17 00:20 -03:00
 */
 
 use App\Services\Pix\AsaasService;
+use App\Services\SaaS\IntegrityCheckService;
 use App\Models\SiteConfiguracao;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
@@ -21,12 +22,24 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Pedido;
 use App\Models\Cliente;
 use App\Models\FinancialTitle;
+use App\Models\Insumo;
+use App\Models\ProductionOrder;
 use App\Models\Produto;
+use App\Models\Employee;
+use App\Models\SupportTicket;
 use App\Models\Usuario;
+use App\Models\Loja;
+use App\Observers\SaaS\EmployeePlanObserver;
+use App\Observers\SaaS\PedidoPlanObserver;
+use App\Observers\SaaS\ProdutoPlanObserver;
+use App\Observers\SaaS\LojaSubscriptionObserver;
 use App\Policies\ClientePolicy;
 use App\Policies\FinancialTitlePolicy;
+use App\Policies\InsumoPolicy;
 use App\Policies\PedidoPolicy;
+use App\Policies\ProductionOrderPolicy;
 use App\Policies\ProdutoPolicy;
+use App\Policies\SupportTicketPolicy;
 use App\Policies\UsuarioPolicy;
 
 class AppServiceProvider extends ServiceProvider
@@ -34,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(\App\Services\SaaS\TenantContext::class);
+        $this->app->singleton(IntegrityCheckService::class);
 
         $this->app->singleton(AsaasService::class, function (): AsaasService {
             return new AsaasService(
@@ -46,11 +60,21 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        app(IntegrityCheckService::class)->ensureRuntimeIntegrity();
+
         Gate::policy(Usuario::class, UsuarioPolicy::class);
         Gate::policy(Pedido::class, PedidoPolicy::class);
         Gate::policy(Produto::class, ProdutoPolicy::class);
         Gate::policy(Cliente::class, ClientePolicy::class);
         Gate::policy(FinancialTitle::class, FinancialTitlePolicy::class);
+        Gate::policy(Insumo::class, InsumoPolicy::class);
+        Gate::policy(SupportTicket::class, SupportTicketPolicy::class);
+        Gate::policy(ProductionOrder::class, ProductionOrderPolicy::class);
+
+        Produto::observe(ProdutoPlanObserver::class);
+        Employee::observe(EmployeePlanObserver::class);
+        Pedido::observe(PedidoPlanObserver::class);
+        Loja::observe(LojaSubscriptionObserver::class);
 
         // Limpa cache ao alterar configurações
         SiteConfiguracao::saved(function ($config) {
@@ -84,18 +108,32 @@ class AppServiceProvider extends ServiceProvider
                     $brandingService = app(\App\Services\Branding\BrandingService::class);
                     $lojaId = null;
 
-                    if (Auth::check()) {
+                    // SEGURANÇA: Usamos hasUser() para evitar disparar queries de Auth
+                    // durante a renderização de partials se o usuário ainda não estiver resolvido.
+                    if (Auth::hasUser()) {
                         $lojaId = Auth::user()->loja_id;
                     } else {
                         // Resolução via Contexto Global (definido no TenantDiscoveryMiddleware)
                         $lojaId = app(\App\Services\SaaS\TenantContext::class)->getLojaId();
                     }
 
-                    // Determina o contexto de branding
+                    // Determina o contexto de branding baseado na URL
                     $path = request()->path();
                     $context = 'admin_panel';
-                    if (str_starts_with($path, 'super-admin')) $context = 'master';
-                    elseif (str_starts_with($path, 'catalogo') || str_starts_with($path, 'p/') || str_starts_with($path, 'checkout') || $path === '/') $context = 'catalog';
+                    
+                    if (str_starts_with($path, 'super-admin')) {
+                        $context = 'master';
+                    } elseif (
+                        $path === '/' ||
+                        str_starts_with($path, 'catalogo') ||
+                        str_starts_with($path, 'produto') ||
+                        str_starts_with($path, 'carrinho') ||
+                        str_starts_with($path, 'checkout') ||
+                        str_starts_with($path, 'acompanhar-pedido') ||
+                        str_starts_with($path, 'p/')
+                    ) {
+                        $context = 'catalog';
+                    }
 
                     $branding = $brandingService->resolve($context, $lojaId);
                     $configPlataforma = $brandingService->getPlatformBranding();
@@ -120,7 +158,8 @@ class AppServiceProvider extends ServiceProvider
                         'currentLojaId' => $lojaId
                     ]);
                 }
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
+                // Silencia erros no View Composer para não quebrar a aplicação inteira
             }
         });
     }

@@ -296,24 +296,94 @@ Modificado em: 15/04/2026 (Evolução Profissional do Cadastro de Produtos)
                             <i class="fas fa-industry text-brand-primary"></i> Produção Interna
                         </h2>
                     </div>
-                    <div class="card-body p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="card-body p-6 space-y-6">
+                        
+                        <!-- Etapas de Produção -->
+                        @if(isset($fasesProducao) && $fasesProducao->isNotEmpty())
                         <div>
-                            <label class="label-form">Modo de Produção</label>
-                            <select name="modo_producao" class="select-modern">
-                                <option value="digital">Impressão Digital</option>
-                                <option value="offset">Impressão Offset</option>
-                                <option value="comunicacao_visual">Comunicação Visual</option>
-                                <option value="terceirizado">Serviço Terceirizado</option>
-                                <option value="outro">Outro Modo</option>
-                            </select>
+                            <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <i class="fas fa-tasks"></i> Etapas de Produção do Produto
+                            </h4>
+                            <p class="text-xs text-slate-500 mb-4">Selecione as etapas que se aplicam a este produto. Se nenhuma for selecionada, serão usadas as etapas padrão da loja.</p>
+                            
+                            <div id="container-etapas-producao" class="space-y-3">
+                                @foreach($fasesProducao as $fase)
+                                        @if($fase->steps->isNotEmpty())
+                                            <div class="rounded-xl border border-slate-200 bg-white p-3">
+                                                <div class="mb-3 border-b border-slate-100 pb-2">
+                                                    <p class="text-[11px] font-black uppercase tracking-widest text-slate-500">{{ $fase->nome }}</p>
+                                                </div>
+
+                                                <div class="space-y-2 border-l-2 border-slate-100 pl-4">
+                                                    @foreach($fase->steps as $etapa)
+                                                        <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-brand-primary/30 transition-all etapa-row" data-step-id="{{ $etapa->id }}">
+                                                            <input type="checkbox" 
+                                                                   class="etapa-checkbox w-5 h-5 text-brand-primary border-slate-300 rounded focus:ring-brand-primary"
+                                                                   data-step-id="{{ $etapa->id }}"
+                                                                   onchange="toggleEtapaFields(this)">
+                                                            <div class="flex-1">
+                                                                <span class="font-black text-slate-700">{{ $etapa->nome }}</span>
+                                                            </div>
+                                                            <div class="flex items-center gap-3 etapa-fields hidden">
+                                                                <div class="flex items-center gap-1">
+                                                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Ordem</label>
+                                                                    <input type="number" 
+                                                                           name="etapas_producao[{{ $etapa->id }}][ordem]" 
+                                                                           class="w-16 input-modern !py-1 text-center text-xs"
+                                                                           value="{{ $etapa->ordem }}"
+                                                                           min="0"
+                                                                           disabled>
+                                                                    <input type="hidden" name="etapas_producao[{{ $etapa->id }}][production_step_id]" value="{{ $etapa->id }}" disabled>
+                                                                </div>
+                                                                <div class="flex items-center gap-1">
+                                                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Tempo (min)</label>
+                                                                    <input type="number" 
+                                                                           name="etapas_producao[{{ $etapa->id }}][tempo_estimado_minutos]" 
+                                                                           class="w-20 input-modern !py-1 text-center text-xs"
+                                                                           placeholder="—"
+                                                                           min="0"
+                                                                           disabled>
+                                                                </div>
+                                                                <div class="flex items-center gap-2">
+                                                                    <input type="checkbox" 
+                                                                           name="etapas_producao[{{ $etapa->id }}][obrigatorio]" 
+                                                                           value="1"
+                                                                           class="w-4 h-4 text-brand-primary border-slate-300 rounded"
+                                                                           checked
+                                                                           disabled>
+                                                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Obrig.</label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endif
+                                    @endforeach
+                            </div>
                         </div>
-                        <div class="md:col-span-2">
-                            <label class="label-form">Checklist de Verificação (Produção)</label>
-                            <textarea name="checklist_producao" rows="2" class="input-modern" placeholder="Ex: Conferir margem; Verificar sangria; Checar ilhós"></textarea>
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="label-form">Instruções Técnicas de Impressão</label>
-                            <textarea name="instrucoes_internas" rows="3" class="input-modern" placeholder="Instruções para o operador da máquina..."></textarea>
+                        <hr class="border-slate-100">
+                        @endif
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="label-form">Modo de Produção</label>
+                                <select name="modo_producao" class="select-modern">
+                                    <option value="digital">Impressão Digital</option>
+                                    <option value="offset">Impressão Offset</option>
+                                    <option value="comunicacao_visual">Comunicação Visual</option>
+                                    <option value="terceirizado">Serviço Terceirizado</option>
+                                    <option value="outro">Outro Modo</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="label-form">Checklist de Verificação (Produção)</label>
+                                <textarea name="checklist_producao" rows="2" class="input-modern" placeholder="Ex: Conferir margem; Verificar sangria; Checar ilhós"></textarea>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="label-form">Instruções Técnicas de Impressão</label>
+                                <textarea name="instrucoes_internas" rows="3" class="input-modern" placeholder="Instruções para o operador da máquina..."></textarea>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -432,6 +502,24 @@ Modificado em: 15/04/2026 (Evolução Profissional do Cadastro de Produtos)
 
     @push('scripts')
     <script>
+        function toggleEtapaFields(checkbox) {
+            const row = checkbox.closest('.etapa-row');
+            const fields = row.querySelector('.etapa-fields');
+            const inputs = fields.querySelectorAll('input');
+            
+            if (checkbox.checked) {
+                fields.classList.remove('hidden');
+                inputs.forEach(input => input.disabled = false);
+                row.classList.add('border-brand-primary/50', 'bg-brand-primary/5');
+                row.classList.remove('border-slate-200', 'bg-slate-50');
+            } else {
+                fields.classList.add('hidden');
+                inputs.forEach(input => input.disabled = true);
+                row.classList.remove('border-brand-primary/50', 'bg-brand-primary/5');
+                row.classList.add('border-slate-200', 'bg-slate-50');
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             // Script de Drag n Drop (Galeria)
             const inputVitrine = document.querySelector('input[name="imagem_destaque"]');

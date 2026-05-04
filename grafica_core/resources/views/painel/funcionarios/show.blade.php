@@ -15,9 +15,6 @@
                 @else
                     {{ substr($funcionario->nome_completo, 0, 1) }}
                 @endif
-                <div class="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-white flex items-center justify-center border-2 border-slate-100 shadow-sm text-emerald-500 text-xs">
-                    <i class="fas fa-check-circle"></i>
-                </div>
             </div>
             <div>
                 <div class="flex items-center gap-3">
@@ -64,6 +61,11 @@
                 <button @click="tab = 'saude'" :class="tab === 'saude' ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20 scale-[1.02]' : 'bg-white text-slate-600 hover:bg-slate-50'" class="flex items-center gap-3 px-5 py-4 rounded-2xl font-black text-sm transition-all border border-slate-200/50">
                     <i class="fas fa-heartbeat w-5"></i> <span>Saúde & Histórico</span>
                 </button>
+                @if($funcionario->usuario)
+                    <button @click="tab = 'treinamentos'" :class="tab === 'treinamentos' ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20 scale-[1.02]' : 'bg-white text-slate-600 hover:bg-slate-50'" class="flex items-center gap-3 px-5 py-4 rounded-2xl font-black text-sm transition-all border border-slate-200/50">
+                        <i class="fas fa-graduation-cap w-5"></i> <span>Treinamentos</span>
+                    </button>
+                @endif
             </nav>
 
             <!-- Quick Contacts -->
@@ -284,6 +286,83 @@
                     </div>
                 </div>
 
+                <!-- SEÇÃO: Ocorrências RH -->
+                <div class="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+                    <div class="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
+                        <h3 class="font-black text-slate-800 text-lg flex items-center gap-2">
+                            <i class="fas fa-exclamation-circle text-brand-primary"></i> Ocorrências RH
+                        </h3>
+                        <a href="{{ route('admin.system.equipe.ocorrencias.index', $funcionario->id) }}" class="text-xs font-black text-brand-primary uppercase tracking-tighter hover:underline">
+                            Ver Todas &rarr;
+                        </a>
+                    </div>
+
+                    @php
+                        $ocorrenciasRecentes = collect();
+                        if (Schema::hasTable('employee_occurrences')) {
+                            $ocorrenciasRecentes = \App\Models\EmployeeOccurrence::doColaborador($funcionario)
+                                ->ordenadoRecente()
+                                ->take(3)
+                                ->get();
+                        }
+                    @endphp
+
+                    @if($ocorrenciasRecentes->isNotEmpty())
+                        <div class="space-y-3">
+                            @foreach($ocorrenciasRecentes as $ocorrencia)
+                                @php
+                                    $cores = [
+                                        'advertencia' => ['bg' => 'bg-orange-50', 'border' => 'border-orange-200', 'icon' => 'exclamation-triangle', 'color' => 'text-orange-600'],
+                                        'suspensao' => ['bg' => 'bg-red-50', 'border' => 'border-red-200', 'icon' => 'ban', 'color' => 'text-red-600'],
+                                        'falta' => ['bg' => 'bg-amber-50', 'border' => 'border-amber-200', 'icon' => 'calendar-times', 'color' => 'text-amber-600'],
+                                        'atestado' => ['bg' => 'bg-blue-50', 'border' => 'border-blue-200', 'icon' => 'file-medical', 'color' => 'text-blue-600'],
+                                        'desligamento' => ['bg' => 'bg-slate-100', 'border' => 'border-slate-300', 'icon' => 'sign-out-alt', 'color' => 'text-slate-600'],
+                                    ];
+                                    $corConfig = $cores[$ocorrencia->tipo] ?? $cores['falta'];
+                                @endphp
+                                <div class="p-4 {{ $corConfig['bg'] }} border {{ $corConfig['border'] }} rounded-2xl hover:shadow-md transition-all">
+                                    <div class="flex items-start gap-3">
+                                        <div class="text-lg {{ $corConfig['color'] }} mt-1">
+                                            <i class="fas fa-{{ $corConfig['icon'] }}"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <span class="font-black text-sm text-slate-800">{{ $ocorrencia->getTipoLabel() }}</span>
+                                                <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full
+                                                    {{ match($ocorrencia->status) {
+                                                        'registrada' => 'bg-slate-200 text-slate-600',
+                                                        'em_analise' => 'bg-amber-200 text-amber-700',
+                                                        'resolvida' => 'bg-emerald-200 text-emerald-700',
+                                                        'contestada' => 'bg-red-200 text-red-700',
+                                                        'arquivada' => 'bg-gray-200 text-gray-600',
+                                                        default => 'bg-slate-100 text-slate-500'
+                                                    } }}">
+                                                    {{ $ocorrencia->getStatusLabel() }}
+                                                </span>
+                                            </div>
+                                            <p class="text-xs text-slate-700 font-bold leading-snug">{{ $ocorrencia->titulo }}</p>
+                                            <div class="text-[11px] text-slate-500 font-medium mt-1">
+                                                <i class="fas fa-calendar-alt mr-1"></i> {{ $ocorrencia->data_ocorrencia->format('d/m/Y') }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="py-8 text-center opacity-50">
+                            <i class="fas fa-check-circle text-3xl text-emerald-500 mb-2"></i>
+                            <p class="text-sm font-black text-slate-400 uppercase">Nenhuma ocorrência registrada</p>
+                        </div>
+                    @endif
+
+                    @if($permissoesOcorrencia['pode_criar'] ?? false)
+                        <a href="{{ route('admin.system.equipe.ocorrencias.create', $funcionario->id) }}" class="mt-4 block w-full bg-brand-primary text-white text-center py-2 rounded-xl font-bold text-xs uppercase transition-all hover:shadow-lg shadow-brand-primary/20">
+                            <i class="fas fa-plus mr-1"></i> Registrar Ocorrência
+                        </a>
+                    @endif
+                </div>
+
                 <div class="bg-orange-50/50 rounded-3xl border-2 border-dashed border-brand-primary/20 p-8 text-center">
                     <h3 class="font-black text-brand-primary uppercase text-sm mb-2">Relato Funcional / Obs. RH</h3>
                     <p class="text-slate-600 font-medium italic">"{{ $funcionario->observacoes_gerais ?: 'Sem anotações internas registradas para este colaborador.' }}"</p>
@@ -379,6 +458,72 @@
                     </div>
                 </div>
             </div>
+
+            @if($funcionario->usuario)
+                <div x-show="tab === 'treinamentos'" class="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+                            <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Aulas concluídas</span>
+                            <span class="text-3xl font-black text-slate-900">{{ $trainingOverview['summary']['aulas_concluidas'] ?? 0 }}/{{ $trainingOverview['summary']['aulas_total'] ?? 0 }}</span>
+                        </div>
+                        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+                            <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Progresso geral</span>
+                            <span class="text-3xl font-black text-brand-primary">{{ $trainingOverview['summary']['percentual_total'] ?? 0 }}%</span>
+                        </div>
+                        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex items-center justify-between gap-4">
+                            <div>
+                                <span class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Detalhamento</span>
+                                <p class="text-sm font-bold text-slate-700">Trilhas, módulos e aulas do colaborador.</p>
+                            </div>
+                            <a href="{{ route('admin.system.equipe.treinamentos.show', $funcionario) }}" class="rounded-2xl bg-brand-primary px-4 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-brand-primary/20">
+                                Ver mapa
+                            </a>
+                        </div>
+                    </div>
+
+                    @if(($trainingOverview['tracks'] ?? collect())->count() > 0)
+                        <div class="space-y-4">
+                            @foreach(($trainingOverview['tracks'] ?? collect())->take(2) as $trackData)
+                                <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+                                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                                        <div>
+                                            <h3 class="text-lg font-black text-slate-900">{{ $trackData['track']->titulo }}</h3>
+                                            <p class="text-xs font-bold uppercase tracking-widest text-slate-400">{{ $trackData['completed_lessons'] }}/{{ $trackData['total_lessons'] }} aulas</p>
+                                        </div>
+                                        <div class="w-full md:w-72">
+                                            <div class="flex items-center justify-between text-xs font-bold text-slate-600 mb-1">
+                                                <span>Progresso</span>
+                                                <span>{{ $trackData['progress_percent'] }}%</span>
+                                            </div>
+                                            <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+                                                <div class="h-2 bg-brand-primary" style="width: {{ $trackData['progress_percent'] }}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid gap-3 md:grid-cols-2">
+                                        @foreach($trackData['modules'] as $moduleData)
+                                            <div class="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+                                                <div class="flex items-center justify-between gap-3">
+                                                    <div>
+                                                        <div class="font-black text-slate-800">{{ $moduleData['module']->nome }}</div>
+                                                        <div class="text-xs text-slate-500">{{ $moduleData['completed_lessons'] }}/{{ $moduleData['total_lessons'] }} aulas</div>
+                                                    </div>
+                                                    <span class="rounded-full bg-white px-3 py-1 text-xs font-black text-brand-primary">{{ $moduleData['progress_percent'] }}%</span>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="bg-white rounded-3xl border border-dashed border-slate-200 p-12 text-center text-slate-400">
+                            Nenhuma trilha publicada vinculada à biblioteca atual.
+                        </div>
+                    @endif
+                </div>
+            @endif
         </div>
     </div>
 

@@ -11,6 +11,12 @@ Modificado em: 2026-04-13 14:47 -03:00
     $nomeEmpresa   = $branding['name'] ?? 'VaptCRM';
     $primaryColor  = $branding['primary_color'] ?? '#FF7A00';
     $secondaryColor = $branding['secondary_color'] ?? '#1E293B';
+    $isAdminArea   = request()->routeIs('admin.*');
+    $menuSections  = collect();
+
+    if ($isAdminArea && auth()->check()) {
+        $menuSections = \App\Support\Menu\PainelMenu::forUser(auth()->user());
+    }
     
     $modoEscuro    = ($cs['aparencia_modo'] ?? 'claro') === 'escuro';
     $whatsapp      = $cs['empresa_whatsapp'] ?? ($cp['plataforma_whatsapp_suporte'] ?? '');
@@ -45,15 +51,15 @@ Modificado em: 2026-04-13 14:47 -03:00
     </style>
     @stack('styles')
 </head>
-<body class="bg-brand-bg text-brand-text font-sans antialiased selection:bg-brand-primary selection:text-white flex flex-col min-h-screen">
-    <header class="sticky top-0 z-50 bg-brand-secondary/95 backdrop-blur-md border-b-4 border-brand-primary text-white shadow-xl transition-all duration-300">
-        <div class="mx-auto flex w-full items-center justify-between px-6 py-4">
-            <div class="flex items-center gap-6">
+<body x-data="{ mobileMenuOpen: false }" class="bg-brand-bg text-brand-text font-sans antialiased selection:bg-brand-primary selection:text-white flex flex-col min-h-screen {{ $isAdminArea ? 'admin-area' : '' }}" :class="{ 'overflow-hidden': mobileMenuOpen }">
+    <header class="sticky top-0 z-50 bg-brand-secondary/95 backdrop-blur-md border-b-4 border-brand-primary text-white shadow-xl transition-all duration-300 admin-mobile-header">
+        <div class="mx-auto flex w-full items-center justify-between px-4 py-2.5 sm:px-6 sm:py-4">
+            <div class="flex items-center gap-3 sm:gap-6">
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 group">
                     @if(!empty($branding['logo']))
-                        <img src="{{ asset('storage/' . $branding['logo']) }}" class="h-10 w-auto group-hover:scale-105 transition-transform duration-300 drop-shadow-md" alt="{{ $nomeEmpresa }}">
+                        <img src="{{ asset('storage/' . $branding['logo']) }}" class="h-8 w-auto group-hover:scale-105 transition-transform duration-300 drop-shadow-md sm:h-10" alt="{{ $nomeEmpresa }}">
                     @else
-                        <img src="{{ asset('img/logo_horizontal.png') }}" class="h-10 w-auto group-hover:scale-105 transition-transform duration-300 drop-shadow-md" alt="{{ $nomeEmpresa }}">
+                        <img src="{{ asset('img/logo_horizontal.png') }}" class="h-8 w-auto group-hover:scale-105 transition-transform duration-300 drop-shadow-md sm:h-10" alt="{{ $nomeEmpresa }}">
                     @endif
                 </a>
 
@@ -75,7 +81,33 @@ Modificado em: 2026-04-13 14:47 -03:00
                 @endif
             </div>
 
+            @if($isAdminArea)
+                <button
+                    type="button"
+                    class="admin-mobile-toggle inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white transition hover:bg-white/20 md:hidden"
+                    @click="mobileMenuOpen = true"
+                    aria-label="Abrir menu principal"
+                >
+                    <x-icon name="list-bullet" class="h-5 w-5" />
+                </button>
+            @endif
+
             <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
+                @auth
+                    @if($isAdminArea)
+                        {{-- Bell Icon / Notifications --}}
+                        <a href="{{ route('admin.notifications.index') }}" class="relative rounded-lg border border-white/20 p-2 hover:bg-white/10 transition-all group" title="Notificações">
+                            <x-icon name="bell" class="w-5 h-5 text-amber-200 group-hover:scale-110 transition-transform" />
+                            @php $unreadCount = Auth::user()->unreadNotifications->count(); @endphp
+                            @if($unreadCount > 0)
+                                <span class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-black text-white shadow-sm ring-2 ring-brand-secondary">
+                                    {{ $unreadCount > 9 ? '9+' : $unreadCount }}
+                                </span>
+                            @endif
+                        </a>
+                    @endif
+                @endauth
+
                 <a href="{{ route('site.catalogo') }}" class="relative overflow-hidden group py-1">
                     <span class="hover:text-amber-200 transition-colors">Catálogo</span>
                     <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-brand-primary transition-all duration-300 group-hover:w-full"></span>
@@ -95,7 +127,45 @@ Modificado em: 2026-04-13 14:47 -03:00
         </div>
     </header>
 
-    @if(request()->routeIs('admin.*'))
+    @if($isAdminArea)
+        <div x-cloak x-show="mobileMenuOpen" class="fixed inset-0 z-[70] md:hidden" role="dialog" aria-modal="true" aria-label="Navegação principal">
+            <div class="absolute inset-0 bg-slate-900/55" @click="mobileMenuOpen = false"></div>
+
+            <aside
+                class="admin-mobile-drawer absolute left-0 top-0 h-full w-[85vw] max-w-[340px] overflow-hidden border-r border-slate-200 bg-white shadow-2xl"
+                x-show="mobileMenuOpen"
+                x-transition:enter="transform transition ease-out duration-200"
+                x-transition:enter-start="-translate-x-full"
+                x-transition:enter-end="translate-x-0"
+                x-transition:leave="transform transition ease-in duration-150"
+                x-transition:leave-start="translate-x-0"
+                x-transition:leave-end="-translate-x-full"
+            >
+                <div class="admin-mobile-drawer-header flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Navegação</p>
+                        <p class="truncate text-sm font-bold text-slate-800">Painel Administrativo</p>
+                    </div>
+                    <button
+                        type="button"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50"
+                        @click="mobileMenuOpen = false"
+                        aria-label="Fechar menu"
+                    >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="h-[calc(100%-65px)] overflow-y-auto px-3 py-4">
+                    <x-layouts.sidebar-menu :sections="$menuSections" :mobile="true" :hide-pdv="true" :close-on-click="true" />
+                </div>
+            </aside>
+        </div>
+    @endif
+
+    @if($isAdminArea)
         <div class="flex-1 w-full px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row gap-6">
             <aside class="hidden w-64 shrink-0 md:block">
                 <div class="sticky top-28 rounded-2xl border border-slate-200 bg-white/80 shadow-lg backdrop-blur-xl flex flex-col max-h-[calc(100vh-8rem)] overflow-y-auto">
@@ -109,14 +179,10 @@ Modificado em: 2026-04-13 14:47 -03:00
                                 $employeeId = auth()->user()->funcionario->id ?? auth()->id();
                                 $roleDisplay = !empty(auth()->user()->cargo) ? auth()->user()->cargo : auth()->user()->perfil;
                             @endphp
-                            <a href="{{ route('admin.system.equipe.show', $employeeId) }}" class="text-sm font-bold text-slate-800 hover:text-brand-primary transition-colors truncate block">{{ auth()->user()->nome }}</a>
+                            <a href="{{ route('admin.system.equipe.show', ['equipe' => $employeeId, 'loja' => auth()->user()->loja->slug ?? null]) }}" class="text-sm font-bold text-slate-800 hover:text-brand-primary transition-colors truncate block">{{ auth()->user()->nome }}</a>
                             <p class="text-[10px] text-slate-400 capitalize font-semibold tracking-wide">{{ $roleDisplay }}</p>
                         </div>
                     </div>
-
-                    @php
-                        $menuSections = \App\Support\Menu\PainelMenu::forUser(auth()->user());
-                    @endphp
 
                     {{-- Menu Principal Dinâmico --}}
                     <div class="px-3 py-4 flex-1">
@@ -126,24 +192,6 @@ Modificado em: 2026-04-13 14:47 -03:00
             </aside>
 
             <main class="min-w-0 flex-1">
-                <!-- Mobile Nav -->
-                <div class="mb-6 flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white/80 p-3 shadow-sm backdrop-blur-md md:hidden scrollbar-hide">
-                    @foreach($menuSections as $section)
-                        @foreach($section['items'] as $item)
-                            @php
-                                $isActive = isset($item['active_pattern']) && request()->routeIs($item['active_pattern']);
-                                $href = $item['url'] ?? (isset($item['route']) ? route($item['route']) : '#');
-                                $isPdv = $item['is_pdv'] ?? false;
-                            @endphp
-                            <a href="{{ $href }}" 
-                               @if($isPdv) onclick="event.preventDefault(); window.open(this.href, 'PDV', 'toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=' + screen.width + ',height=' + screen.height)" @endif
-                               class="whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-colors {{ $isActive ? 'bg-brand-primary text-white shadow-sm' : 'bg-slate-50 text-slate-600' }}">
-                                {{ $item['label'] }}
-                            </a>
-                        @endforeach
-                    @endforeach
-                </div>
-
                 <!-- Flash Messages -->
                 @if(session('sucesso'))
                     <div class="mb-6 rounded-xl border-l-4 border-status-success bg-status-success/10 p-4 text-status-success shadow-sm animate-fade-in-down">
@@ -161,9 +209,12 @@ Modificado em: 2026-04-13 14:47 -03:00
                     </div>
                 @endif
 
-                <div class="animate-fade-in">
+                <div class="animate-fade-in admin-mobile-content">
                     {{ $slot }}
                 </div>
+                
+                {{-- Modals Globais --}}
+                <x-modals.upgrade-required />
             </main>
         </div>
     @else
@@ -172,60 +223,64 @@ Modificado em: 2026-04-13 14:47 -03:00
         </main>
     @endif
 
-    <footer class="mt-auto border-t border-slate-200 {{ $modoEscuro ? 'bg-slate-900' : 'bg-white' }} py-10">
-        <div class="mx-auto max-w-screen-2xl px-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-                {{-- Coluna 1: Logo e descrição --}}
-                <div class="flex flex-col items-center md:items-start gap-3">
-                    @if(!empty($cs['aparencia_logo_rodape']))
-                        <img src="{{ asset('storage/' . $cs['aparencia_logo_rodape']) }}" class="h-8 w-auto opacity-70" alt="{{ $nomeEmpresa }}">
-                    @elseif(!empty($cs['aparencia_logo']))
-                        <img src="{{ asset('storage/' . $cs['aparencia_logo']) }}" class="h-8 w-auto opacity-50 grayscale" alt="{{ $nomeEmpresa }}">
-                    @else
-                        <img src="{{ asset('img/logo_horizontal.png') }}" class="h-8 grayscale brightness-0 opacity-50" alt="{{ $nomeEmpresa }}">
-                    @endif
-                    @if(!empty($cs['aparencia_rodape_texto']))
-                        <p class="text-xs text-slate-500 leading-relaxed text-center md:text-left max-w-xs">{{ $cs['aparencia_rodape_texto'] }}</p>
-                    @endif
-                </div>
-
-                {{-- Coluna 2: Dados da empresa --}}
-                <div class="text-center md:text-left space-y-1.5">
-                    @if(!empty($cs['empresa_endereco']))
-                        <p class="text-xs text-slate-500">{{ $cs['empresa_endereco'] }}</p>
-                    @endif
-                    @if(!empty($cs['empresa_cidade_uf']))
-                        <p class="text-xs text-slate-500">{{ $cs['empresa_cidade_uf'] }} {{ !empty($cs['empresa_cep']) ? '- CEP ' . $cs['empresa_cep'] : '' }}</p>
-                    @endif
-                    @if(!empty($cs['empresa_telefone']))
-                        <p class="text-xs text-slate-500">Tel: {{ $cs['empresa_telefone'] }}</p>
-                    @endif
-                    @if(!empty($cs['empresa_cnpj']))
-                        <p class="text-xs text-slate-400">CNPJ: {{ $cs['empresa_cnpj'] }}</p>
-                    @endif
-                </div>
-
-                {{-- Coluna 3: Links e copyright --}}
-                <div class="flex flex-col items-center md:items-end gap-3">
-                    <div class="flex items-center gap-3">
-                        @if(!empty($cs['empresa_instagram']))
-                            <a href="{{ $cs['empresa_instagram'] }}" target="_blank" rel="noopener" class="text-slate-400 hover:text-brand-primary transition-colors" aria-label="Instagram">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-                            </a>
+    @if(request()->routeIs('admin.*'))
+        <x-layouts.footer-admin :branding="$branding ?? []" :nome-empresa="$nomeEmpresa" />
+    @else
+        <footer class="mt-auto border-t border-slate-200 {{ $modoEscuro ? 'bg-slate-900' : 'bg-white' }} py-10">
+            <div class="mx-auto max-w-screen-2xl px-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+                    {{-- Coluna 1: Logo e descrição --}}
+                    <div class="flex flex-col items-center md:items-start gap-3">
+                        @if(!empty($cs['aparencia_logo_rodape']))
+                            <img src="{{ asset('storage/' . $cs['aparencia_logo_rodape']) }}" class="h-8 w-auto opacity-70" alt="{{ $nomeEmpresa }}">
+                        @elseif(!empty($cs['aparencia_logo']))
+                            <img src="{{ asset('storage/' . $cs['aparencia_logo']) }}" class="h-8 w-auto opacity-50 grayscale" alt="{{ $nomeEmpresa }}">
+                        @else
+                            <img src="{{ asset('img/logo_horizontal.png') }}" class="h-8 grayscale brightness-0 opacity-50" alt="{{ $nomeEmpresa }}">
                         @endif
-                        @if(!empty($whatsapp))
-                            <a href="https://wa.me/{{ $whatsapp }}" target="_blank" rel="noopener" class="text-slate-400 hover:text-emerald-500 transition-colors" aria-label="WhatsApp">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                            </a>
+                        @if(!empty($cs['aparencia_rodape_texto']))
+                            <p class="text-xs text-slate-500 leading-relaxed text-center md:text-left max-w-xs">{{ $cs['aparencia_rodape_texto'] }}</p>
                         @endif
                     </div>
-                    <p class="text-xs font-medium text-slate-400">
-                        &copy; {{ date('Y') }} {{ $nomeEmpresa }}.
-                    </p>
+
+                    {{-- Coluna 2: Dados da empresa --}}
+                    <div class="text-center md:text-left space-y-1.5">
+                        @if(!empty($cs['empresa_endereco']))
+                            <p class="text-xs text-slate-500">{{ $cs['empresa_endereco'] }}</p>
+                        @endif
+                        @if(!empty($cs['empresa_cidade_uf']))
+                            <p class="text-xs text-slate-500">{{ $cs['empresa_cidade_uf'] }} {{ !empty($cs['empresa_cep']) ? '- CEP ' . $cs['empresa_cep'] : '' }}</p>
+                        @endif
+                        @if(!empty($cs['empresa_telefone']))
+                            <p class="text-xs text-slate-500">Tel: {{ $cs['empresa_telefone'] }}</p>
+                        @endif
+                        @if(!empty($cs['empresa_cnpj']))
+                            <p class="text-xs text-slate-400">CNPJ: {{ $cs['empresa_cnpj'] }}</p>
+                        @endif
+                    </div>
+
+                    {{-- Coluna 3: Links e copyright --}}
+                    <div class="flex flex-col items-center md:items-end gap-3">
+                        <div class="flex items-center gap-3">
+                            @if(!empty($cs['empresa_instagram']))
+                                <a href="{{ $cs['empresa_instagram'] }}" target="_blank" rel="noopener" class="text-slate-400 hover:text-brand-primary transition-colors" aria-label="Instagram">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                                </a>
+                            @endif
+                            @if(!empty($whatsapp))
+                                <a href="https://wa.me/{{ $whatsapp }}" target="_blank" rel="noopener" class="text-slate-400 hover:text-emerald-500 transition-colors" aria-label="WhatsApp">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                                </a>
+                            @endif
+                        </div>
+                        <p class="text-xs font-medium text-slate-400">
+                            &copy; {{ date('Y') }} {{ $nomeEmpresa }}.
+                        </p>
+                    </div>
                 </div>
             </div>
-        </div>
-    </footer>
+        </footer>
+    @endif
 
     <script>
         // Toggle de acessibilidade: modo claro/escuro (localStorage)

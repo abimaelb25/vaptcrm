@@ -12,71 +12,36 @@ namespace App\Http\Controllers\Admin\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Models\MovimentacaoFinanceira;
+use App\Services\Domain\FinanceApplicationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class TransactionController extends Controller
 {
+    public function __construct(
+        protected FinanceApplicationService $financeApplicationService,
+    ) {}
+
     public function index(Request $request): View
     {
         $inicio = $request->inicio ?? now()->startOfMonth()->toDateString();
         $fim = $request->fim ?? now()->toDateString();
 
-        $query = MovimentacaoFinanceira::query()->with(['pedido', 'usuario']);
-
-        if ($request->filled('tipo')) {
-            $query->where('tipo', $request->tipo);
-        }
-
-        $query->whereBetween('data_movimentacao', [$inicio, $fim]);
-
-        $baseQuery = MovimentacaoFinanceira::where('status', 'pago');
-
-        $entradasMes = (clone $baseQuery)->where('tipo', 'entrada')
-            ->whereBetween('data_movimentacao', [$inicio, $fim])->sum('valor');
-
-        $saidasMes = (clone $baseQuery)->where('tipo', 'saida')
-            ->whereBetween('data_movimentacao', [$inicio, $fim])->sum('valor');
-
-        $saldoAtual = MovimentacaoFinanceira::where('status', 'pago')
-            ->sum(DB::raw('CASE WHEN tipo = "entrada" THEN valor ELSE -valor END'));
-
-        $contasPendentes = MovimentacaoFinanceira::where('status', 'pendente')
-            ->sum(DB::raw('CASE WHEN tipo = "entrada" THEN valor ELSE -valor END'));
-
-        return view('painel.financeiro.index', [
-            'movimentacoes' => $query->latest()->paginate(50),
-            'recentes' => MovimentacaoFinanceira::with(['pedido'])->latest()->take(20)->get(),
-            'saldoAtual' => $saldoAtual,
-            'entradasMes' => $entradasMes,
-            'saidasMes' => $saidasMes,
-            'contasPendentes' => $contasPendentes,
-            'inicio' => $inicio,
-            'fim' => $fim,
-        ]);
+        return view('painel.financeiro.index', $this->financeApplicationService->transactionIndexPayload(
+            $inicio,
+            $fim,
+            $request->filled('tipo') ? (string) $request->tipo : null
+        ));
     }
 
     public function extrato(Request $request): View
     {
-        $query = MovimentacaoFinanceira::query()->with(['pedido', 'usuario']);
-
-        if ($request->filled('tipo')) {
-            $query->where('tipo', $request->tipo);
-        }
-
-        if ($request->filled('inicio')) {
-            $query->where('data_movimentacao', '>=', $request->inicio);
-        }
-
-        if ($request->filled('fim')) {
-            $query->where('data_movimentacao', '<=', $request->fim);
-        }
-
-        return view('painel.financeiro.extrato', [
-            'movimentacoes' => $query->latest()->paginate(50),
-        ]);
+        return view('painel.financeiro.extrato', $this->financeApplicationService->transactionExtractPayload(
+            $request->filled('tipo') ? (string) $request->tipo : null,
+            $request->filled('inicio') ? (string) $request->inicio : null,
+            $request->filled('fim') ? (string) $request->fim : null
+        ));
     }
 
     public function store(Request $request): RedirectResponse

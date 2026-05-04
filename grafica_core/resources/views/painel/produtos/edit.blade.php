@@ -49,6 +49,9 @@ Modificado em: 15/04/2026 (Evolução Profissional do Cadastro de Produtos)
                 <a href="#secao-acabamentos" class="nav-item hidden-simple">Acabamentos</a>
                 <a href="#secao-variacoes" class="nav-item hidden-simple">Variações e Quantidades</a>
                 <a href="#secao-producao" class="nav-item">Produção</a>
+                @if($config_precificacao?->precificacao_dinamica_ativa)
+                <a href="#secao-precificacao" class="nav-item border-brand-primary text-brand-primary font-black"><i class="fas fa-calculator mr-2"></i> Custos e Preço</a>
+                @endif
                 <a href="#secao-marketing" class="nav-item">Marketing e SEO</a>
                 <a href="#secao-galeria" class="nav-item">Galeria Visual</a>
             </nav>
@@ -323,18 +326,256 @@ Modificado em: 15/04/2026 (Evolução Profissional do Cadastro de Produtos)
                     <div class="card-header bg-slate-50 border-b p-5 text-slate-800">
                         <h2 class="text-lg font-black flex items-center gap-2"><i class="fas fa-industry text-brand-primary"></i> Produção</h2>
                     </div>
-                    <div class="card-body p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div class="md:col-span-2">
-                            <label class="label-form">Checklist Interno</label>
-                            <textarea name="checklist_producao" rows="2" class="input-modern">{{ $produto->checklist_producao }}</textarea>
+                    <div class="card-body p-6 space-y-6">
+                        
+                        <!-- Etapas de Produção -->
+                        @if(isset($fasesProducao) && $fasesProducao->isNotEmpty())
+                        @php
+                            $etapasVinculadas = $produto->etapasProducao->keyBy('production_step_id');
+                        @endphp
+                        <div>
+                            <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <i class="fas fa-tasks"></i> Etapas de Produção do Produto
+                            </h4>
+                            <p class="text-xs text-slate-500 mb-4">Selecione as etapas que se aplicam a este produto. Se nenhuma for selecionada, serão usadas as etapas padrão da loja.</p>
+                            
+                            <div id="container-etapas-producao" class="space-y-3">
+                                @foreach($fasesProducao as $fase)
+                                        @if($fase->steps->isNotEmpty())
+                                            <div class="rounded-xl border border-slate-200 bg-white p-3">
+                                                <div class="mb-3 border-b border-slate-100 pb-2">
+                                                    <p class="text-[11px] font-black uppercase tracking-widest text-slate-500">{{ $fase->nome }}</p>
+                                                </div>
+
+                                                <div class="space-y-2 border-l-2 border-slate-100 pl-4">
+                                                    @foreach($fase->steps as $etapa)
+                                                        @php
+                                                            $vinculo = $etapasVinculadas->get($etapa->id);
+                                                            $isChecked = $vinculo !== null;
+                                                        @endphp
+                                                        <div class="flex items-center gap-4 p-4 rounded-xl border transition-all etapa-row {{ $isChecked ? 'border-brand-primary/50 bg-brand-primary/5' : 'bg-slate-50 border-slate-200' }}" data-step-id="{{ $etapa->id }}">
+                                                            <input type="checkbox" 
+                                                                   class="etapa-checkbox w-5 h-5 text-brand-primary border-slate-300 rounded focus:ring-brand-primary"
+                                                                   data-step-id="{{ $etapa->id }}"
+                                                                   onchange="toggleEtapaFields(this)"
+                                                                   {{ $isChecked ? 'checked' : '' }}>
+                                                            <div class="flex-1">
+                                                                <span class="font-black text-slate-700">{{ $etapa->nome }}</span>
+                                                            </div>
+                                                            <div class="flex items-center gap-3 etapa-fields {{ $isChecked ? '' : 'hidden' }}">
+                                                                <div class="flex items-center gap-1">
+                                                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Ordem</label>
+                                                                    <input type="number" 
+                                                                           name="etapas_producao[{{ $etapa->id }}][ordem]" 
+                                                                           class="w-16 input-modern !py-1 text-center text-xs"
+                                                                           value="{{ $vinculo?->ordem ?? $etapa->ordem }}"
+                                                                           min="0"
+                                                                           {{ $isChecked ? '' : 'disabled' }}>
+                                                                    <input type="hidden" name="etapas_producao[{{ $etapa->id }}][production_step_id]" value="{{ $etapa->id }}" {{ $isChecked ? '' : 'disabled' }}>
+                                                                </div>
+                                                                <div class="flex items-center gap-1">
+                                                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Tempo (min)</label>
+                                                                    <input type="number" 
+                                                                           name="etapas_producao[{{ $etapa->id }}][tempo_estimado_minutos]" 
+                                                                           class="w-20 input-modern !py-1 text-center text-xs"
+                                                                           value="{{ $vinculo?->tempo_estimado_minutos }}"
+                                                                           placeholder="—"
+                                                                           min="0"
+                                                                           {{ $isChecked ? '' : 'disabled' }}>
+                                                                </div>
+                                                                <div class="flex items-center gap-2">
+                                                                    <input type="checkbox" 
+                                                                           name="etapas_producao[{{ $etapa->id }}][obrigatorio]" 
+                                                                           value="1"
+                                                                           class="w-4 h-4 text-brand-primary border-slate-300 rounded"
+                                                                           {{ ($vinculo?->obrigatorio ?? true) ? 'checked' : '' }}
+                                                                           {{ $isChecked ? '' : 'disabled' }}>
+                                                                    <label class="text-[10px] font-bold text-slate-400 uppercase">Obrig.</label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endif
+                                    @endforeach
+                            </div>
                         </div>
-                        <div class="md:col-span-2">
-                            <label class="label-form">Instruções de Produção</label>
-                            <textarea name="instrucoes_internas" rows="3" class="input-modern">{{ $produto->instrucoes_internas }}</textarea>
+                        <hr class="border-slate-100">
+                        @endif
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div class="md:col-span-2">
+                                <label class="label-form">Checklist Interno</label>
+                                <textarea name="checklist_producao" rows="2" class="input-modern">{{ $produto->checklist_producao }}</textarea>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="label-form">Instruções de Produção</label>
+                                <textarea name="instrucoes_internas" rows="3" class="input-modern">{{ $produto->instrucoes_internas }}</textarea>
+                            </div>
                         </div>
                     </div>
                 </section>
 
+                <!-- 8.5 PRECIFICACAO DINAMICA (Ficha Técnica) -->
+                @if($config_precificacao?->precificacao_dinamica_ativa)
+                <section id="secao-precificacao" class="card-secao border-2 border-brand-primary/50 relative overflow-visible">
+                    <div class="card-header bg-slate-50 border-b p-5 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-lg font-black text-slate-800 flex items-center gap-2">
+                                <i class="fas fa-calculator text-brand-primary"></i> Ficha Técnica e Preço Inteligente
+                            </h2>
+                            <p class="text-xs text-slate-500 font-bold mt-1">Cálculo dinâmico baseado no custo de materiais e taxas globais da loja.</p>
+                        </div>
+                        <span class="px-3 py-1 bg-brand-primary/10 text-brand-primary text-xs font-black rounded uppercase">Ativo</span>
+                    </div>
+                    <div class="card-body p-0 grid grid-cols-1 xl:grid-cols-12 gap-0 relative">
+                        
+                        <!-- Coluna da Esquerda (Formulário de Insumos/Serviços) -->
+                        <div class="xl:col-span-8 p-6 space-y-8 border-r border-slate-100">
+                            
+                            <!-- Parametros da Ficha -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                                <div>
+                                    <label class="label-form">Tempo Padrão (Min)</label>
+                                    <input type="number" name="ficha_tecnica[tempo_producao_min]" id="ficha_tempo_producao_min" value="{{ $produto->fichaTecnica?->tempo_producao_min ?? 0 }}" class="input-modern trigger-simulacao" min="0">
+                                </div>
+                                <div>
+                                    <label class="label-form">Qtd. da Receita Base</label>
+                                    <input type="number" name="ficha_tecnica[quantidade_base]" id="ficha_quantidade_base" value="{{ $produto->fichaTecnica?->quantidade_base ?? 1 }}" class="input-modern trigger-simulacao" min="1">
+                                </div>
+                                <div>
+                                    <label class="label-form">Perda Natural/Quebra (%)</label>
+                                    <input type="number" step="0.01" name="ficha_tecnica[perda_percentual]" id="ficha_perda_percentual" value="{{ $produto->fichaTecnica?->perda_percentual ?? 0 }}" class="input-modern trigger-simulacao" min="0" max="100">
+                                </div>
+                            </div>
+
+                            <!-- Insumos (Materiais) -->
+                            <div>
+                                <div class="flex justify-between items-center mb-4">
+                                    <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest"><i class="fas fa-box-open mr-1"></i> Materiais Consumidos</h4>
+                                    <button type="button" onclick="adicionarInsumoFicha()" class="text-[10px] font-black px-3 py-1.5 bg-blue-600 text-white rounded-lg shadow-sm">+ Add Material</button>
+                                </div>
+                                <div id="container-ficha-insumos" class="space-y-3">
+                                    @php $fichaInsumos = $produto->fichaTecnica?->insumos ?? collect(); @endphp
+                                    @foreach($fichaInsumos as $index => $item)
+                                    <div class="flex gap-2 items-center bg-white border border-slate-200 p-2 rounded-xl animate-fade-in row-insumo">
+                                        <div class="flex-1">
+                                            <select name="ficha_tecnica[insumos][{{ $index }}][insumo_id]" class="select-modern !py-2 !text-xs trigger-simulacao insumo-id-val">
+                                                <option value="">Selecione um Insumo...</option>
+                                                @foreach($insumos_loja as $insumo)
+                                                    <option value="{{ $insumo->id }}" data-custo="{{ $insumo->custo_medio }}" {{ $item->insumo_id == $insumo->id ? 'selected' : '' }}>{{ $insumo->nome }} ({{ $insumo->unidade_medida }}) - R$ {{ number_format($insumo->custo_medio, 2, ',', '.') }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="w-24 relative">
+                                            <label class="text-[9px] font-black text-slate-400 uppercase absolute -top-4 left-1">Qtd</label>
+                                            <input type="number" step="0.0001" name="ficha_tecnica[insumos][{{ $index }}][quantidade]" value="{{ $item->quantidade }}" class="input-modern !py-2 text-center text-xs trigger-simulacao insumo-qtd-val">
+                                        </div>
+                                        <div class="w-24 relative">
+                                            <label class="text-[9px] font-black text-slate-400 uppercase absolute -top-4 left-1">Perda %</label>
+                                            <input type="number" step="0.01" name="ficha_tecnica[insumos][{{ $index }}][fator_perda]" value="{{ $item->fator_perda }}" class="input-modern !py-2 text-center text-xs trigger-simulacao insumo-perda-val">
+                                        </div>
+                                        <button type="button" onclick="removerLinhaSimulacao(this)" class="p-2 text-slate-300 hover:text-red-500 transition-colors"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            <!-- Serviços/Terceirização -->
+                            <div>
+                                <div class="flex justify-between items-center mb-4">
+                                    <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest"><i class="fas fa-cut mr-1"></i> Serviços e Processos</h4>
+                                    <button type="button" onclick="adicionarServicoFicha()" class="text-[10px] font-black px-3 py-1.5 bg-emerald-600 text-white rounded-lg shadow-sm">+ Add Serviço</button>
+                                </div>
+                                <div id="container-ficha-servicos" class="space-y-3">
+                                    @php $fichaServicos = $produto->fichaTecnica?->servicos ?? collect(); @endphp
+                                    @foreach($fichaServicos as $index => $item)
+                                    <div class="flex gap-2 items-center bg-white border border-slate-200 p-2 rounded-xl animate-fade-in row-servico">
+                                        <div class="flex-1">
+                                            <select name="ficha_tecnica[servicos][{{ $index }}][servico_producao_id]" class="select-modern !py-2 !text-xs trigger-simulacao servico-id-val">
+                                                <option value="">Selecione um Serviço...</option>
+                                                @foreach($servicos_loja as $servico)
+                                                    <option value="{{ $servico->id }}" {{ $item->servico_producao_id == $servico->id ? 'selected' : '' }}>{{ $servico->nome }} ({{ $servico->tipo_cobranca }}) - R$ {{ number_format($servico->custo_base, 2, ',', '.') }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="w-24 relative">
+                                            <label class="text-[9px] font-black text-slate-400 uppercase absolute -top-4 left-1">Qtd/Tempo</label>
+                                            <input type="number" step="0.0001" name="ficha_tecnica[servicos][{{ $index }}][quantidade]" value="{{ $item->quantidade }}" class="input-modern !py-2 text-center text-xs trigger-simulacao servico-qtd-val">
+                                        </div>
+                                        <button type="button" onclick="removerLinhaSimulacao(this)" class="p-2 text-slate-300 hover:text-red-500 transition-colors"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="label-form flex justify-between items-center">
+                                    <span>Margem de Lucro Desejada (%) <span class="text-brand-primary">*</span></span>
+                                    <span class="text-xs text-slate-400 font-medium">No carrinho, qual margem aplicar por padrão?</span>
+                                </label>
+                                <input type="number" step="0.01" name="margem_lucro" id="ficha_margem_lucro" value="{{ old('margem_lucro', $produto->margem_lucro > 0 ? $produto->margem_lucro : 20.0) }}" class="input-modern font-black text-brand-primary text-xl trigger-simulacao">
+                            </div>
+
+                        </div>
+
+                        <!-- Coluna da Direita (Painel Fixo de Resumo de Custos) -->
+                        <div class="xl:col-span-4 bg-slate-900 text-white p-6 relative">
+                            <div class="sticky top-32 space-y-6">
+                                <div>
+                                    <h3 class="text-sm font-black uppercase tracking-widest text-slate-400 mb-1">Custo Projetado</h3>
+                                    <p class="text-[11px] text-slate-500 font-bold mb-4">Simulação em tempo real, sem salvar.</p>
+                                    
+                                    <div class="space-y-3 font-medium text-sm">
+                                        <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                                            <span class="text-slate-300"><i class="fas fa-box-open mr-2 text-blue-400"></i> Materiais</span>
+                                            <span class="font-bold" id="sim-custo-materiais">R$ 0,00</span>
+                                        </div>
+                                        <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                                            <span class="text-slate-300"><i class="fas fa-cut mr-2 text-emerald-400"></i> Serviços</span>
+                                            <span class="font-bold" id="sim-custo-servicos">R$ 0,00</span>
+                                        </div>
+                                        <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                                            <span class="text-slate-300" title="Proporcional ao tempo produtivo"><i class="fas fa-industry mr-2 text-purple-400"></i> C. Operacional Fixo</span>
+                                            <span class="font-bold" id="sim-custo-indireto">R$ 0,00</span>
+                                        </div>
+                                        <div class="flex justify-between items-center border-b border-white/10 pb-2 text-orange-200">
+                                            <span><i class="fas fa-percent mr-2"></i> Encargos da Loja</span>
+                                            <span class="font-bold" id="sim-encargos-perc">0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-black/40 rounded-2xl p-4 border border-white/10">
+                                    <p class="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Preço Mínimo / Empate</p>
+                                    <p class="text-2xl font-black text-red-400" id="sim-preco-equilibrio">R$ 0,00</p>
+                                    <p class="text-[10px] text-red-300/60 font-bold leading-tight mt-1">Abaixo disso você tem prejuízo absoluto no caixa.</p>
+                                </div>
+
+                                <div class="bg-brand-primary rounded-2xl p-4 border border-orange-400 shadow-xl shadow-brand-primary/20 relative overflow-hidden">
+                                    <div class="absolute -right-4 -bottom-4 opacity-20"><i class="fas fa-coins text-8xl"></i></div>
+                                    <p class="text-[10px] uppercase font-black tracking-widest text-orange-100 mb-1">Preço Sugerido (Venda)</p>
+                                    <p class="text-3xl font-black text-white" id="sim-preco-sugerido">R$ 0,00</p>
+                                    <p class="text-xs text-orange-100 font-bold leading-tight mt-1">Com lucro de <span id="sim-margem-lucro">0</span>%</p>
+                                </div>
+
+                                <div id="alerta-prejuizo" class="hidden bg-red-500/20 border border-red-500 p-3 rounded-xl text-red-200 text-xs font-bold flex items-start gap-2">
+                                    <i class="fas fa-exclamation-triangle mt-0.5"></i>
+                                    <p>O <strong>Preço Base Manual</strong> (R$ <span id="aviso-preco-manual">{{ number_format($produto->preco_base, 2, ',', '.') }}</span>) está menor que o Custo Mínimo. Você pode ter prejuízo se não atualizar!</p>
+                                </div>
+
+                                <button type="button" id="btn-recalcular-manual" class="w-full rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 py-3 text-sm font-black text-white transition">
+                                    <i class="fas fa-sync-alt mr-2"></i> Forçar Simulação
+                                </button>
+                                <p class="text-center text-[10px] text-slate-500 font-bold">A simulação ocorre automaticamente ao digitar.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+                @endif
+                
                 <!-- 9. MARKETING E SEO -->
                 <section id="secao-marketing" class="card-secao">
                     <div class="card-header bg-slate-50 border-b p-5">
@@ -442,6 +683,24 @@ Modificado em: 15/04/2026 (Evolução Profissional do Cadastro de Produtos)
 
     @push('scripts')
     <script>
+        function toggleEtapaFields(checkbox) {
+            const row = checkbox.closest('.etapa-row');
+            const fields = row.querySelector('.etapa-fields');
+            const inputs = fields.querySelectorAll('input');
+            
+            if (checkbox.checked) {
+                fields.classList.remove('hidden');
+                inputs.forEach(input => input.disabled = false);
+                row.classList.add('border-brand-primary/50', 'bg-brand-primary/5');
+                row.classList.remove('border-slate-200', 'bg-slate-50');
+            } else {
+                fields.classList.add('hidden');
+                inputs.forEach(input => input.disabled = true);
+                row.classList.remove('border-brand-primary/50', 'bg-brand-primary/5');
+                row.classList.add('border-slate-200', 'bg-slate-50');
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             // Script de Drag n Drop (Galeria)
             const inputVitrine = document.querySelector('input[name="imagem_destaque"]');
@@ -609,6 +868,183 @@ Modificado em: 15/04/2026 (Evolução Profissional do Cadastro de Produtos)
             `;
             container.appendChild(div);
         }
+
+        // --- SISTEMA DE PRECIFICAÇÃO DINÂMICA (Ficha Técnica) ---
+        @if($config_precificacao?->precificacao_dinamica_ativa)
+        let fInsumoIdx = {{ $produto->fichaTecnica?->insumos->count() ?? 0 }};
+        let fServicoIdx = {{ $produto->fichaTecnica?->servicos->count() ?? 0 }};
+
+        function adicionarInsumoFicha() {
+            const container = document.getElementById('container-ficha-insumos');
+            const div = document.createElement('div');
+            div.className = "flex gap-2 items-center bg-white border border-slate-200 p-2 rounded-xl animate-fade-in row-insumo";
+            let idx = fInsumoIdx++;
+            
+            // Gerar options via JS (Clonando as do primeiro select ou carregando de var global)
+            let options = '<option value="">Selecione um Insumo...</option>';
+            @foreach($insumos_loja as $insumo)
+                options += `<option value="{{ $insumo->id }}">{{ $insumo->nome }} ({{ $insumo->unidade_medida }})</option>`;
+            @endforeach
+
+            div.innerHTML = `
+                <div class="flex-1">
+                    <select name="ficha_tecnica[insumos][${idx}][insumo_id]" class="select-modern !py-2 !text-xs trigger-simulacao insumo-id-val">${options}</select>
+                </div>
+                <div class="w-24 relative"><input type="number" step="0.0001" name="ficha_tecnica[insumos][${idx}][quantidade]" value="1" class="input-modern !py-2 text-center text-xs trigger-simulacao insumo-qtd-val"></div>
+                <div class="w-24 relative"><input type="number" step="0.01" name="ficha_tecnica[insumos][${idx}][fator_perda]" value="0" class="input-modern !py-2 text-center text-xs trigger-simulacao insumo-perda-val"></div>
+                <button type="button" onclick="removerLinhaSimulacao(this)" class="p-2 text-slate-300 hover:text-red-500 transition-colors"><i class="fas fa-trash"></i></button>
+            `;
+            container.appendChild(div);
+            atrelarEventosSimulacao();
+        }
+
+        function adicionarServicoFicha() {
+            const container = document.getElementById('container-ficha-servicos');
+            const div = document.createElement('div');
+            div.className = "flex gap-2 items-center bg-white border border-slate-200 p-2 rounded-xl animate-fade-in row-servico";
+            let idx = fServicoIdx++;
+            
+            let options = '<option value="">Selecione um Serviço...</option>';
+            @foreach($servicos_loja as $servico)
+                options += `<option value="{{ $servico->id }}">{{ $servico->nome }} ({{ $servico->tipo_cobranca }})</option>`;
+            @endforeach
+
+            div.innerHTML = `
+                <div class="flex-1">
+                    <select name="ficha_tecnica[servicos][${idx}][servico_producao_id]" class="select-modern !py-2 !text-xs trigger-simulacao servico-id-val">${options}</select>
+                </div>
+                <div class="w-24 relative"><input type="number" step="0.0001" name="ficha_tecnica[servicos][${idx}][quantidade]" value="1" class="input-modern !py-2 text-center text-xs trigger-simulacao servico-qtd-val"></div>
+                <button type="button" onclick="removerLinhaSimulacao(this)" class="p-2 text-slate-300 hover:text-red-500 transition-colors"><i class="fas fa-trash"></i></button>
+            `;
+            container.appendChild(div);
+            atrelarEventosSimulacao();
+        }
+
+        function removerLinhaSimulacao(btn) {
+            btn.closest('div.animate-fade-in').remove();
+            dispararSimulacaoTimeout();
+        }
+
+        function montarPayloadSimulacao() {
+            const insumos = [];
+            document.querySelectorAll('.row-insumo').forEach(row => {
+                const id = row.querySelector('.insumo-id-val').value;
+                if(id) {
+                    insumos.push({
+                        insumo_id: id,
+                        quantidade: row.querySelector('.insumo-qtd-val').value || 0,
+                        fator_perda: row.querySelector('.insumo-perda-val').value || 0
+                    });
+                }
+            });
+
+            const servicos = [];
+            document.querySelectorAll('.row-servico').forEach(row => {
+                const id = row.querySelector('.servico-id-val').value;
+                if(id) {
+                    servicos.push({
+                        servico_producao_id: id,
+                        quantidade: row.querySelector('.servico-qtd-val').value || 0,
+                        fator_aplicacao: 1.0 // Padrão
+                    });
+                }
+            });
+
+            return {
+                tempo_producao_min: document.getElementById('ficha_tempo_producao_min')?.value || 0,
+                quantidade_base: document.getElementById('ficha_quantidade_base')?.value || 1,
+                perda_percentual: document.getElementById('ficha_perda_percentual')?.value || 0,
+                margem_lucro: document.getElementById('ficha_margem_lucro')?.value || 20,
+                insumos: insumos,
+                servicos: servicos
+            };
+        }
+
+        let simulacaoTimer;
+        function dispararSimulacaoTimeout() {
+            clearTimeout(simulacaoTimer);
+            simulacaoTimer = setTimeout(executarSimulacaoAPI, 600); // 600ms debounce
+        }
+
+        function formatBRL(valor) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+        }
+
+        async function executarSimulacaoAPI() {
+            const btnForca = document.getElementById('btn-recalcular-manual');
+            if(btnForca) { btnForca.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Calculando...'; btnForca.disabled = true; }
+            
+            const payload = montarPayloadSimulacao();
+            
+            try {
+                const url = "{{ route('admin.catalog.produtos.pricing.simular', $produto->id) }}";
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const json = await response.json();
+                
+                if(json.success && json.data) {
+                    const data = json.data;
+                    document.getElementById('sim-custo-materiais').innerText = formatBRL(data.custo_insumos);
+                    document.getElementById('sim-custo-servicos').innerText = formatBRL(data.custo_servicos);
+                    document.getElementById('sim-custo-indireto').innerText = formatBRL(data.custo_indireto);
+                    document.getElementById('sim-encargos-perc').innerText = data.encargos_percentual + '%';
+                    
+                    document.getElementById('sim-preco-equilibrio').innerText = formatBRL(data.preco_equilibrio);
+                    document.getElementById('sim-preco-sugerido').innerText = formatBRL(data.preco_sugerido);
+                    document.getElementById('sim-margem-lucro').innerText = data.margem_lucro_aplicada;
+
+                    // Alerta de prejuízo com o preço manual (preco_base na página)
+                    const precoManualAtualStr = document.querySelector('input[name="preco_base"]').value || 0;
+                    const precoManualAtual = parseFloat(precoManualAtualStr);
+                    const alertBox = document.getElementById('alerta-prejuizo');
+                    
+                    if(precoManualAtual > 0 && precoManualAtual < data.preco_equilibrio) {
+                        alertBox.classList.remove('hidden');
+                        document.getElementById('aviso-preco-manual').innerText = formatBRL(precoManualAtual).replace('R$', '');
+                    } else {
+                        alertBox.classList.add('hidden');
+                    }
+                }
+            } catch (e) {
+                console.error("Erro na simulação:", e);
+            } finally {
+                if(btnForca) { btnForca.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Forçar Simulação'; btnForca.disabled = false; }
+            }
+        }
+
+        function atrelarEventosSimulacao() {
+            document.querySelectorAll('.trigger-simulacao').forEach(el => {
+                el.removeEventListener('input', dispararSimulacaoTimeout);
+                el.removeEventListener('change', dispararSimulacaoTimeout);
+                
+                if(el.tagName === 'SELECT') {
+                    el.addEventListener('change', dispararSimulacaoTimeout);
+                } else {
+                    el.addEventListener('input', dispararSimulacaoTimeout);
+                }
+            });
+            const btnManual = document.getElementById('btn-recalcular-manual');
+            if(btnManual) {
+                btnManual.removeEventListener('click', executarSimulacaoAPI);
+                btnManual.addEventListener('click', executarSimulacaoAPI);
+            }
+        }
+
+        // Executar inicial
+        document.addEventListener('DOMContentLoaded', () => {
+            atrelarEventosSimulacao();
+            const margemInput = document.getElementById('ficha_margem_lucro');
+            if(margemInput) dispararSimulacaoTimeout(); // Simula ao carregar a página para popular os cards se a aba existir
+        });
+        @endif
     </script>
     @endpush
 </x-layouts.app>

@@ -10,29 +10,47 @@ namespace App\Http\Controllers\Admin\Support;
 
 use App\Http\Controllers\Controller;
 use App\Models\HelpContent;
+use App\Services\Support\VaptAcademyService;
+use Illuminate\Http\RedirectResponse;
 
 class HelpCenterController extends Controller
 {
+    public function __construct(
+        protected VaptAcademyService $academyService,
+    ) {}
+
     public function index()
     {
-        $destaques = HelpContent::publicados()->where('destaque', true)->orderBy('ordem')->get();
-        $videos = HelpContent::publicados()->where('destaque', false)->orderBy('ordem')->get();
-        
-        return view('painel.support.help-center.index', compact('destaques', 'videos'));
+        $dados = $this->academyService->montarBiblioteca(auth()->user());
+
+        return view('painel.support.help-center.index', $dados);
     }
 
     public function show(HelpContent $helpContent)
     {
-        if (!$helpContent->publicado) {
-            abort(404);
-        }
-        
-        $sugeridos = HelpContent::publicados()
-            ->where('id', '!=', $helpContent->id)
-            ->inRandomOrder()
-            ->limit(4)
-            ->get();
+        $dados = $this->academyService->obterDetalhe(auth()->user(), $helpContent);
 
-        return view('painel.support.help-center.show', compact('helpContent', 'sugeridos'));
+        return view('painel.support.help-center.show', [
+            'helpContent' => $helpContent,
+            'sugeridos' => $dados['sugeridos'],
+            'progresso' => $dados['progresso'],
+            'quizStatus' => $dados['quizStatus'],
+            'sameModuleLessons' => $dados['sameModuleLessons'],
+            'sameTrackModules' => $dados['sameTrackModules'],
+            'trackProgressPercent' => $dados['trackProgressPercent'],
+            'moduleProgressPercent' => $dados['moduleProgressPercent'],
+            'resumoBiblioteca' => $dados['resumoBiblioteca'],
+        ]);
+    }
+
+    public function concluir(HelpContent $helpContent): RedirectResponse
+    {
+        if (! $this->academyService->podeConcluirAula(auth()->user(), $helpContent)) {
+            return back()->with('erro', 'Finalize o quiz desta aula antes de marcar a conclusão.');
+        }
+
+        $this->academyService->registrarConclusao(auth()->user(), $helpContent, 100);
+
+        return back()->with('success', 'Treinamento marcado como concluído.');
     }
 }

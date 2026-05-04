@@ -10,6 +10,9 @@ Data: 2026-04-15 18:50
             <p class="text-slate-500 font-medium">Controle de matéria-prima e suprimentos para produção.</p>
         </div>
         <div class="mt-4 sm:mt-0 flex gap-3">
+            <a href="{{ route('admin.inventory.nfe-importacao.create') }}" class="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-blue-700 flex items-center gap-2">
+                <span>📄</span> Importar NF-e XML
+            </a>
             <a href="{{ route('admin.inventory.movimentacoes.entrada') }}" class="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-emerald-600 flex items-center gap-2">
                 <span>📩</span> Registrar Entrada
             </a>
@@ -69,6 +72,11 @@ Data: 2026-04-15 18:50
                 <tbody class="divide-y divide-slate-100">
                     @forelse($insumos as $insumo)
                         <tr class="hover:bg-slate-50 transition">
+                            @php
+                                $custoConsumo = $insumo->getCustoEfetivo();
+                                $resumoCustos = $insumo->getResumoConversaoCustos();
+                                $custoBaseFormatado = rtrim(rtrim(number_format($custoConsumo, 6, ',', '.'), '0'), ',');
+                            @endphp
                             <td class="px-6 py-4">
                                 <p class="text-sm font-black text-slate-800">{{ $insumo->nome }}</p>
                                 <p class="text-[10px] text-slate-400 font-bold">COD: {{ $insumo->codigo_interno ?? '—' }}</p>
@@ -81,12 +89,18 @@ Data: 2026-04-15 18:50
                                     {{ number_format($insumo->estoque_atual, 2, ',', '.') }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-sm font-black text-slate-700 text-right">R$ {{ number_format($insumo->custo_medio, 2, ',', '.') }}</td>
+                            <td class="px-6 py-4 text-right">
+                                <p class="text-sm font-black text-slate-700">R$ {{ $custoBaseFormatado }} / {{ $insumo->unidade_medida }}</p>
+                                @if($insumo->temConversaoUnidade())
+                                    <p class="text-[10px] font-bold text-slate-400">Equivalente a R$ {{ number_format($resumoCustos['custo_por_unidade_compra'], 2, ',', '.') }} / {{ $resumoCustos['unidade_compra'] }}</p>
+                                @endif
+                            </td>
                             <td class="px-6 py-4 text-center">
                                 @php $status = $insumo->status_estoque; @endphp
                                 <span class="rounded-full px-3 py-1 text-[10px] font-black uppercase 
-                                    {{ $status === 'ok' ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200' : 
-                                       ($status === 'baixo' ? 'bg-orange-50 text-orange-600 ring-1 ring-orange-200' : 'bg-red-50 text-red-600 ring-1 ring-red-200') }}">
+                                                {{ $status === 'nao_controlado' ? 'bg-slate-100 text-slate-500 ring-1 ring-slate-200' :
+                                                    ($status === 'ok' ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200' : 
+                                       ($status === 'baixo' ? 'bg-orange-50 text-orange-600 ring-1 ring-orange-200' : 'bg-red-50 text-red-600 ring-1 ring-red-200')) }}">
                                     {{ $status }}
                                 </span>
                             </td>
@@ -94,6 +108,20 @@ Data: 2026-04-15 18:50
                                 <div class="flex items-center justify-center gap-2">
                                     <a href="{{ route('admin.inventory.insumos.edit', $insumo) }}" class="p-2 text-slate-400 hover:text-brand-primary transition" title="Editar">✏️</a>
                                     <a href="{{ route('admin.inventory.insumos.ajuste', $insumo) }}" class="p-2 text-slate-400 hover:text-brand-secondary transition" title="Ajuste de Saldo">⚖️</a>
+                                    @can('delete', $insumo)
+                                        <form action="{{ route('admin.inventory.insumos.destroy', $insumo) }}" method="POST" class="inline" onsubmit="return confirm('⚠️ Excluir permanentemente o insumo \"{{ addslashes($insumo->nome) }}\"?\n\nEsta ação não pode ser desfeita.');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition" title="Excluir permanentemente">🗑️</button>
+                                        </form>
+                                    @elsecan('deactivate', $insumo)
+                                        @if($insumo->ativo ?? true)
+                                            <form action="{{ route('admin.inventory.insumos.inativar', $insumo) }}" method="POST" class="inline" onsubmit="return confirm('Inativar o insumo \"{{ addslashes($insumo->nome) }}\"?\n\nO histórico de movimentações será preservado.');">
+                                                @csrf
+                                                <button type="submit" class="p-2 text-slate-400 hover:text-orange-500 transition" title="Inativar insumo (tem movimentações)">🚫</button>
+                                            </form>
+                                        @endif
+                                    @endcan
                                 </div>
                             </td>
                         </tr>

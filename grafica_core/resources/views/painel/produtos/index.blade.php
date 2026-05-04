@@ -4,12 +4,17 @@ Site: https://abimaelborges.adv.br
 Modificado em: 2026-04-06 00:00 -03:00
 --}}
 <x-layouts.app>
-        <div class="mt-4 sm:mt-0 flex gap-2">
-            <a href="{{ route('admin.catalog.produtos.create') }}" class="rounded-xl bg-gradient-to-r from-brand-primary to-orange-500 px-6 py-2.5 text-sm font-bold text-white shadow-md transition-transform duration-300 hover:scale-105 hover:shadow-lg flex items-center gap-2">
-                <span>➕</span> Novo Produto/Serviço
+    <x-ui.page-header
+        title="Gestão de Produtos e Serviços"
+        subtitle="Gerencie cadastro, visibilidade e configuração comercial dos produtos."
+    >
+        <x-slot:actions>
+            <a href="{{ route('admin.catalog.produtos.create') }}" class="btn-base btn-primary">
+                <span>+</span>
+                Novo Produto/Serviço
             </a>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-ui.page-header>
 
 
     <!-- Tabela de Produtos -->
