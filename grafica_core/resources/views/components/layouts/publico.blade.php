@@ -15,6 +15,9 @@ Data: 2026-04-22 02:15 -03:00
     $modoEscuro    = ($cs['aparencia_modo'] ?? 'claro') === 'escuro';
     $whatsapp      = $cs['empresa_whatsapp'] ?? '5575999279354';
     $isFullWidth   = $fullWidth ?? false;
+    $hideFooter    = $hideFooter ?? false;
+    $hideNav       = $hideNav ?? false;
+    $showSaasHeader = $showSaasHeader ?? false;
 @endphp
 <!DOCTYPE html>
 <html lang="pt-BR" @if($modoEscuro) class="dark" @endif>
@@ -49,7 +52,7 @@ Data: 2026-04-22 02:15 -03:00
 </head>
 <body class="public-catalog bg-brand-bg text-brand-text font-sans antialiased selection:bg-brand-primary selection:text-white flex flex-col min-h-screen">
     {{-- Header Público --}}
-    <header class="sticky top-0 z-50 bg-brand-secondary/95 backdrop-blur-md border-b-4 border-brand-primary text-white shadow-xl">
+    <header class="sticky top-0 z-50 backdrop-blur-md {{ $showSaasHeader ? 'bg-white border-b border-slate-200 shadow-sm' : 'bg-brand-secondary/95 border-b-4 border-brand-primary text-white shadow-xl' }}">
         <div class="public-header-wrap mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
             <a href="{{ \App\Support\PublicUrlHelper::inicio() }}" class="flex items-center gap-3 group">
                 @if(!empty($branding['logo']))
@@ -59,8 +62,19 @@ Data: 2026-04-22 02:15 -03:00
                 @endif
             </a>
 
-            <nav class="flex items-center gap-2 sm:gap-4 md:gap-8">
-                @if(!($hideNav ?? false))
+            <nav class="flex items-center gap-2 sm:gap-4 md:gap-6">
+                @if($showSaasHeader)
+                {{-- NAV SAAS (landing institucional) --}}
+                <a href="https://app.graficavaptvupt.com.br/entrar"
+                   class="text-sm font-bold text-slate-700 hover:text-blue-700 transition-colors px-3 py-2 rounded-lg hover:bg-slate-100">
+                    ENTRAR
+                </a>
+                <a href="#planos"
+                   class="hidden sm:inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-orange-500/30">
+                    Começar agora
+                </a>
+                @elseif(!$hideNav)
+                {{-- NAV DE LOJA --}}
                 <a href="{{ \App\Support\PublicUrlHelper::catalogo() }}" class="hidden md:block relative overflow-hidden group py-1 text-sm font-bold uppercase tracking-wider">
                     <span class="hover:text-amber-200 transition-colors">Produtos</span>
                     <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-brand-primary transition-all duration-300 group-hover:w-full"></span>
@@ -111,6 +125,7 @@ Data: 2026-04-22 02:15 -03:00
     </main>
 
     {{-- Rodapé Público —  Autoria: Abimael Borges | https://abimaelborges.adv.br | 2026-04-22 02:15 -03:00 --}}
+    @if(!$hideFooter)
     <footer class="public-footer mt-auto border-t border-slate-200 {{ $modoEscuro ? 'bg-slate-900' : 'bg-white' }} py-6 sm:py-8 md:py-12">
         <div class="mx-auto max-w-7xl px-4 sm:px-6">
 
@@ -247,5 +262,6 @@ Data: 2026-04-22 02:15 -03:00
 
         </div>
     </footer>
+    @endif
 </body>
 </html>
