@@ -38,7 +38,10 @@ class AssinaturaController extends Controller
     public function index()
     {
         $assinatura = $this->saasService->getAssinatura();
-        $planos = Plano::where('ativo', true)->orderBy('preco_mensal')->get();
+        $planos = Plano::query()
+            ->operational()
+            ->commercialOrder()
+            ->get();
 
         $snapshots = $this->planService->usageDashboard();
         $usage = [
@@ -86,6 +89,10 @@ class AssinaturaController extends Controller
             'strict_downgrade' => 'nullable|boolean',
         ]);
 
+        if (! $plano->isOperationalOffer()) {
+            return redirect()->route('admin.billing.index')->with('erro', 'Este plano não está disponível para novas contratações ou trocas.');
+        }
+
         $loja = Loja::query()->findOrFail(Auth::user()->loja_id);
 
         $result = $this->commercialSubscriptionService->changePlan(
@@ -120,6 +127,10 @@ class AssinaturaController extends Controller
         // SEGURANÇA: Verifica se o plano existe e está ativo
         if (! $plano->exists || ! $plano->ativo) {
             return redirect()->route('admin.billing.index')->with('erro', 'O plano selecionado é inválido ou não está mais disponível.');
+        }
+
+        if (! $plano->isOperationalOffer()) {
+            return redirect()->route('admin.billing.index')->with('erro', 'Este plano não está disponível para novas contratações.');
         }
 
         $assinatura = $this->saasService->getAssinatura();

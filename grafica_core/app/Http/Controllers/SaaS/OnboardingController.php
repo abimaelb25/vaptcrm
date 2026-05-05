@@ -37,7 +37,10 @@ class OnboardingController extends Controller
      */
     public function show(string $plano_slug = 'bronze'): View
     {
-        $plano = Plano::where('slug', $plano_slug)->where('ativo', true)->firstOrFail();
+        $plano = Plano::query()
+            ->publicVisible()
+            ->where('slug', $plano_slug)
+            ->firstOrFail();
         
         return view('saas.onboarding.register', [
             'plano' => $plano
@@ -69,7 +72,18 @@ class OnboardingController extends Controller
              $slug .= '-' . Str::lower(Str::random(4));
         }
 
-        return DB::transaction(function () use ($request, $slug) {
+        $plano = Plano::query()
+            ->publicVisible()
+            ->where('id', (int) $request->plano_id)
+            ->first();
+
+        if (! $plano) {
+            return back()->withErrors([
+                'plano_id' => 'O plano selecionado não está disponível para contratação pública.',
+            ])->withInput();
+        }
+
+        return DB::transaction(function () use ($request, $slug, $plano) {
             // 1. Criar a Loja
             $loja = Loja::create([
                 'nome_fantasia'        => $request->nome_fantasia,
@@ -78,7 +92,7 @@ class OnboardingController extends Controller
                 'responsavel_email'    => $request->responsavel_email,
                 'responsavel_whatsapp' => $request->responsavel_whatsapp,
                 'status'               => 'trial',
-                'plano_id'             => $request->plano_id,
+                'plano_id'             => $plano->id,
                 // trial_ends_at é definido centralmente no TenantProvisioningService
             ]);
 
@@ -90,7 +104,7 @@ class OnboardingController extends Controller
             ];
 
             // 3. Provisionar estrutura inicial via serviço
-            $admin = $this->provisioningService->provision($loja, $adminData, (int)$request->plano_id);
+            $admin = $this->provisioningService->provision($loja, $adminData, (int) $plano->id);
 
             // 4. Autenticar e redirecionar
             Auth::login($admin);

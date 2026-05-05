@@ -14,11 +14,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Schema;
 
 class Plano extends Model
 {
     use SoftDeletes;
+
+    public const OFFICIAL_OPERATIONAL_SLUGS = ['bronze', 'prata', 'ouro', 'diamante'];
+
+    private static array $planColumnCache = [];
 
     protected $table = 'saas_planos';
 
@@ -38,6 +44,8 @@ class Plano extends Model
         'recursos_premium',
         'ativo',
         'is_legacy',
+        'visivel_publicamente',
+        'ordem_exibicao',
     ];
 
     protected $casts = [
@@ -51,7 +59,62 @@ class Plano extends Model
         'ativo' => 'boolean',
         'version' => 'integer',
         'is_legacy' => 'boolean',
+        'visivel_publicamente' => 'boolean',
+        'ordem_exibicao' => 'integer',
     ];
+
+    public function scopeOperational(Builder $query): Builder
+    {
+        $query->where('ativo', true)
+            ->whereIn('slug', self::OFFICIAL_OPERATIONAL_SLUGS);
+
+        if (self::hasPlanColumn('is_legacy')) {
+            $query->where('is_legacy', false);
+        }
+
+        return $query;
+    }
+
+    public function scopePublicVisible(Builder $query): Builder
+    {
+        $query->operational();
+
+        if (self::hasPlanColumn('visivel_publicamente')) {
+            $query->where('visivel_publicamente', true);
+        }
+
+        if (self::hasPlanColumn('ordem_exibicao')) {
+            $query->orderBy('ordem_exibicao');
+        }
+
+        return $query->orderBy('preco_mensal');
+    }
+
+    public function scopeCommercialOrder(Builder $query): Builder
+    {
+        if (self::hasPlanColumn('ordem_exibicao')) {
+            $query->orderBy('ordem_exibicao');
+        }
+
+        return $query->orderBy('preco_mensal')->orderBy('nome');
+    }
+
+    public function isOperationalOffer(): bool
+    {
+        return (bool) $this->ativo
+            && (! self::hasPlanColumn('is_legacy') || ! (bool) $this->is_legacy)
+            && (! self::hasPlanColumn('visivel_publicamente') || (bool) $this->visivel_publicamente)
+            && in_array($this->slug, self::OFFICIAL_OPERATIONAL_SLUGS, true);
+    }
+
+    private static function hasPlanColumn(string $column): bool
+    {
+        if (! array_key_exists($column, self::$planColumnCache)) {
+            self::$planColumnCache[$column] = Schema::hasColumn('saas_planos', $column);
+        }
+
+        return self::$planColumnCache[$column];
+    }
 
     /**
      * Verifica se o plano tem algum limite específico de funcionários.
@@ -132,11 +195,6 @@ class Plano extends Model
         }
 
         return (float) $this->price_yearly;
-    }
-
-    public function isEnterprise(): bool
-    {
-        return $this->slug === 'enterprise';
     }
 
     public function featureEnabled(string $key): bool

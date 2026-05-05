@@ -14,6 +14,7 @@ use App\Models\SaaS\Plano;
 use App\Models\SaaS\PlanoFeature;
 use App\Models\SaaS\PlanoLimit;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class SaasPlanoSeeder extends Seeder
 {
@@ -33,6 +34,9 @@ class SaasPlanoSeeder extends Seeder
                 'limite_produtos' => 20,
                 'limite_funcionarios' => 2,
                 'version' => 1,
+                'ordem_exibicao' => 1,
+                'visivel_publicamente' => true,
+                'is_legacy' => false,
                 'recursos_premium' => [
                     'central_pedidos' => true,
                     'gestao_clientes' => true,
@@ -69,6 +73,9 @@ class SaasPlanoSeeder extends Seeder
                 'limite_produtos' => 100,
                 'limite_funcionarios' => 5,
                 'version' => 1,
+                'ordem_exibicao' => 2,
+                'visivel_publicamente' => true,
+                'is_legacy' => false,
                 'recursos_premium' => [
                     'central_pedidos' => true,
                     'gestao_clientes' => true,
@@ -106,6 +113,9 @@ class SaasPlanoSeeder extends Seeder
                 'limite_produtos' => null,
                 'limite_funcionarios' => null,
                 'version' => 1,
+                'ordem_exibicao' => 3,
+                'visivel_publicamente' => true,
+                'is_legacy' => false,
                 'recursos_premium' => [
                     'central_pedidos' => true,
                     'gestao_clientes' => true,
@@ -137,24 +147,25 @@ class SaasPlanoSeeder extends Seeder
                 ],
             ],
             [
-                'nome' => 'Enterprise',
-                'slug' => 'enterprise',
-                'preco_mensal' => 0.00,
-                'price_monthly' => 0.00,
-                'price_yearly' => 0.00,
-                'trial_days' => 7,
+                'nome' => 'Diamante',
+                'slug' => 'diamante',
+                'preco_mensal' => 499.00,
+                'price_monthly' => 499.00,
+                'price_yearly' => 4990.00,
+                'trial_days' => 14,
                 'limite_produtos' => null,
                 'limite_funcionarios' => null,
                 'version' => 1,
+                'ordem_exibicao' => 4,
+                'visivel_publicamente' => true,
+                'is_legacy' => false,
                 'recursos_premium' => [
                     'central_pedidos' => true,
                     'gestao_clientes' => true,
                     'bi_avancado' => true,
                     'suporte_prioritario' => true,
-                    'acesso_full' => true,
-                    'sla_dedicado' => true,
-                    'onboarding_dedicado' => true,
-                    'custom_features' => true,
+                    'multiempresa_opcional' => true,
+                    'whatsapp_api_oficial' => true,
                 ],
                 'features' => [
                     'modulo_produtos' => true,
@@ -169,7 +180,7 @@ class SaasPlanoSeeder extends Seeder
                     'multiusuario_avancado' => true,
                     'multiempresa' => true,
                     'relatorios_avancados' => true,
-                    'custom_sla' => true,
+                    'whatsapp_oficial' => true,
                 ],
                 'limits' => [
                     'max_produtos' => null,
@@ -177,7 +188,7 @@ class SaasPlanoSeeder extends Seeder
                     'max_pedidos_mes' => null,
                     'max_ops_simultaneas' => null,
                     'max_producao_ativa' => null,
-                    'max_storage_mb' => null,
+                    'max_storage_mb' => 51200,
                 ],
             ],
         ];
@@ -185,6 +196,18 @@ class SaasPlanoSeeder extends Seeder
         foreach ($planos as $planoData) {
             $features = $planoData['features'];
             $limits = $planoData['limits'];
+
+            if (! Schema::hasColumn('saas_planos', 'ordem_exibicao')) {
+                unset($planoData['ordem_exibicao']);
+            }
+
+            if (! Schema::hasColumn('saas_planos', 'visivel_publicamente')) {
+                unset($planoData['visivel_publicamente']);
+            }
+
+            if (! Schema::hasColumn('saas_planos', 'is_legacy')) {
+                unset($planoData['is_legacy']);
+            }
 
             unset($planoData['features'], $planoData['limits']);
 
@@ -209,5 +232,22 @@ class SaasPlanoSeeder extends Seeder
                 );
             }
         }
+
+        // Enterprise segue como legado para compatibilidade histórica (sem operação comercial ativa).
+        $enterpriseUpdates = ['ativo' => false];
+
+        if (Schema::hasColumn('saas_planos', 'is_legacy')) {
+            $enterpriseUpdates['is_legacy'] = true;
+        }
+
+        if (Schema::hasColumn('saas_planos', 'visivel_publicamente')) {
+            $enterpriseUpdates['visivel_publicamente'] = false;
+        }
+
+        if (Schema::hasColumn('saas_planos', 'ordem_exibicao')) {
+            $enterpriseUpdates['ordem_exibicao'] = 999;
+        }
+
+        Plano::query()->where('slug', 'enterprise')->update($enterpriseUpdates);
     }
 }

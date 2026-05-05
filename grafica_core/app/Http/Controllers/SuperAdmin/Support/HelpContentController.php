@@ -35,7 +35,7 @@ class HelpContentController extends Controller
         $helpContent = new HelpContent();
         $tracks = AcademyTrack::query()->where('publicado', true)->orderBy('ordem')->orderBy('titulo')->get();
         $courses = AcademyCourse::query()->with('track')->where('ativo', true)->orderBy('ordem')->orderBy('nome')->get();
-        $plans = Plano::query()->where('ativo', true)->orderBy('nome')->get(['id', 'nome', 'slug']);
+        $plans = Plano::query()->operational()->commercialOrder()->get(['id', 'nome', 'slug']);
         $quizQuestionsDraft = [];
 
         return view('super-admin.support.help-contents.form', compact('helpContent', 'tracks', 'courses', 'plans', 'quizQuestionsDraft'));
@@ -90,7 +90,7 @@ class HelpContentController extends Controller
     {
         $tracks = AcademyTrack::query()->where('publicado', true)->orderBy('ordem')->orderBy('titulo')->get();
         $courses = AcademyCourse::query()->with('track')->where('ativo', true)->orderBy('ordem')->orderBy('nome')->get();
-        $plans = Plano::query()->where('ativo', true)->orderBy('nome')->get(['id', 'nome', 'slug']);
+        $plans = Plano::query()->operational()->commercialOrder()->get(['id', 'nome', 'slug']);
         $quizQuestionsDraft = $this->obterQuizQuestionsDraft($helpContent);
 
         return view('super-admin.support.help-contents.form', compact('helpContent', 'tracks', 'courses', 'plans', 'quizQuestionsDraft'));

@@ -30,7 +30,6 @@
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4">
                                 <div class="font-bold text-gray-900">{{ $plano->nome }}</div>
-                                <div class="text-xs text-gray-400 font-mono">Stripe ID: {{ $plano->stripe_price_id ?? 'Nenhum' }}</div>
                             </td>
                             <td class="px-6 py-4 text-center font-medium text-gray-900">
                                 R$ {{ number_format($plano->preco_mensal, 2, ',', '.') }}
@@ -44,7 +43,9 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-center">
-                                @if($plano->ativo)
+                                @if($plano->is_legacy)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Legado</span>
+                                @elseif($plano->ativo)
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Ativo</span>
                                 @else
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">Inativo</span>
@@ -105,6 +106,9 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Stripe Price ID (Opcional)</label>
                                     <input type="text" name="stripe_price_id" id="input_stripe" class="mt-1 border border-gray-300 block w-full rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="price_1NXXXXXX">
+                                    <p class="mt-1 text-xs text-gray-500">
+                                        Campo técnico opcional. Preencha apenas se a cobrança Stripe estiver configurada.
+                                    </p>
                                 </div>
 
                                 <div>

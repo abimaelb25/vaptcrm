@@ -21,7 +21,7 @@ class PlanosController extends Controller
     {
         $planos = Plano::withCount(['assinaturas' => function($q) {
             $q->whereIn('status', ['active', 'trial', 'past_due']);
-        }])->orderBy('preco_mensal')->get();
+        }])->commercialOrder()->get();
 
         return view('super-admin.planos.index', compact('planos'));
     }

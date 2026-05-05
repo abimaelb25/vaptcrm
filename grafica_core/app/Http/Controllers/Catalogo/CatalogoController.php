@@ -75,8 +75,10 @@ class CatalogoController extends Controller
         // Depoimentos da PLATAFORMA
         $depoimentos = Depoimento::daPlataforma()->publicados()->orderBy('ordem_exibicao')->get();
         
-        // Planos SaaS
-        $planos = Plano::where('ativo', true)->get();
+        // Planos SaaS oficiais visíveis comercialmente (Enterprise legado fora da vitrine)
+        $planos = Plano::query()
+            ->publicVisible()
+            ->get();
 
         return view('publico.landing-vapt', [
             'banners'     => $banners,
