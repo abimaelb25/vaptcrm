@@ -149,9 +149,9 @@ class SaasPlanoSeeder extends Seeder
             [
                 'nome' => 'Diamante',
                 'slug' => 'diamante',
-                'preco_mensal' => 499.00,
-                'price_monthly' => 499.00,
-                'price_yearly' => 4990.00,
+                'preco_mensal' => 399.00,
+                'price_monthly' => 399.00,
+                'price_yearly' => 3990.00,
                 'trial_days' => 14,
                 'limite_produtos' => null,
                 'limite_funcionarios' => null,
@@ -165,7 +165,7 @@ class SaasPlanoSeeder extends Seeder
                     'bi_avancado' => true,
                     'suporte_prioritario' => true,
                     'multiempresa_opcional' => true,
-                    'whatsapp_api_oficial' => true,
+                    'whatsapp_api_oficial_beta' => true,
                 ],
                 'features' => [
                     'modulo_produtos' => true,

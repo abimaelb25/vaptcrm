@@ -361,20 +361,40 @@
                     </p>
                 </div>
 
+                @php
+                $recursoLabels = [
+                    'central_pedidos'           => 'Central de pedidos',
+                    'gestao_clientes'           => 'Gestão de clientes',
+                    'bi_basico'                 => 'Relatórios básicos',
+                    'bi_avancado'               => 'BI avançado',
+                    'suporte_basico'            => 'Suporte básico',
+                    'suporte_prioritario'       => 'Suporte prioritário',
+                    'multiempresa_opcional'     => 'Multi-empresa',
+                    'whatsapp_api_oficial_beta' => 'WhatsApp API oficial (beta)',
+                    'whatsapp_api_oficial'      => 'WhatsApp API oficial',
+                ];
+                @endphp
                 <div class="grid sm:grid-cols-2 @if($planos->count() >= 4) lg:grid-cols-4 @elseif($planos->count() === 3) lg:grid-cols-3 @else lg:grid-cols-2 @endif gap-6">
                     @foreach($planos as $plano)
                     @php
-                        $isPopular = $plano->slug === 'prata' || ($loop->iteration === 2 && $planos->count() >= 3);
+                        $isPopular  = $plano->slug === 'prata' || ($loop->iteration === 2 && $planos->count() >= 3);
+                        $isDiamante = $plano->slug === 'diamante';
                     @endphp
-                    <div class="lp-plan {{ $isPopular ? 'popular' : '' }}">
+                    <div class="lp-plan {{ $isPopular ? 'popular' : '' }} {{ $isDiamante ? 'relative' : '' }}">
                         <div class="mb-6">
-                            <span class="inline-block bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-full px-3 py-1 mb-4">
-                                {{ $plano->trial_days ?? 15 }} dias grátis
-                            </span>
+                            @if($isDiamante)
+                                <span class="inline-block bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-widest rounded-full px-3 py-1 mb-4">
+                                    ✦ Topo da oferta
+                                </span>
+                            @else
+                                <span class="inline-block bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-full px-3 py-1 mb-4">
+                                    {{ $plano->trial_days ?? 15 }} dias grátis
+                                </span>
+                            @endif
                             <h3 class="text-xl font-black text-slate-900 mb-1">{{ $plano->nome }}</h3>
                             <div class="flex items-end gap-1 mt-3">
                                 <span class="text-sm font-bold text-slate-400 mb-1.5">R$</span>
-                                <span class="text-4xl font-black text-slate-900">{{ number_format($plano->preco_mensal, 0, ',', '.') }}</span>
+                                <span class="text-4xl font-black {{ $isDiamante ? 'text-amber-600' : 'text-slate-900' }}">{{ number_format($plano->preco_mensal, 0, ',', '.') }}</span>
                                 <span class="text-slate-400 text-sm mb-1.5">/mês</span>
                             </div>
                         </div>
@@ -390,9 +410,13 @@
                             </li>
                             @foreach($plano->recursos_premium ?? [] as $key => $valor)
                                 @if($valor)
-                                <li class="flex items-center gap-2 text-slate-600">
-                                    <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                    {{ ucfirst(str_replace('_', ' ', $key)) }}
+                                <li class="flex items-center gap-2 {{ ($isDiamante && $key === 'whatsapp_api_oficial_beta') ? 'text-amber-700 font-semibold' : 'text-slate-600' }}">
+                                    @if($isDiamante && $key === 'whatsapp_api_oficial_beta')
+                                        <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    @else
+                                        <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    @endif
+                                    {{ $recursoLabels[$key] ?? ucfirst(str_replace('_', ' ', $key)) }}
                                 </li>
                                 @endif
                             @endforeach
@@ -400,9 +424,11 @@
 
                         <a href="{{ route('onboarding.start', $plano->slug) }}"
                            class="block w-full text-center py-3 rounded-xl font-bold text-sm transition-all
-                                  {{ $isPopular
-                                     ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-orange-500/30'
-                                     : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200' }}">
+                                  {{ $isDiamante
+                                     ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md hover:shadow-amber-500/30'
+                                     : ($isPopular
+                                        ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-orange-500/30'
+                                        : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200') }}">
                             Começar grátis
                         </a>
                     </div>
