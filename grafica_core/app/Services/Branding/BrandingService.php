@@ -52,7 +52,6 @@ class BrandingService
 
         switch ($context) {
             case 'catalog':
-            case 'public_page':
             case 'checkout':
                 return [
                     'logo' => !empty($tenant['aparencia_logo']) ? $tenant['aparencia_logo'] : $platform['plataforma_logo'],
@@ -62,6 +61,16 @@ class BrandingService
                     'secondary_color' => $tenant['aparencia_cor_secundaria'] ?? $platform['plataforma_cor_secundaria'],
                     'support_whatsapp' => $tenant['empresa_whatsapp'] ?? $platform['plataforma_whatsapp_suporte'],
                     'is_tenant' => true
+                ];
+
+            case 'public_page':
+                return [
+                    'logo' => $platform['plataforma_logo'],
+                    'favicon' => $platform['plataforma_favicon'],
+                    'name' => $platform['plataforma_nome'],
+                    'primary_color' => $platform['plataforma_cor_primaria'],
+                    'secondary_color' => $platform['plataforma_cor_secundaria'],
+                    'is_tenant' => false
                 ];
 
             case 'master':
@@ -76,8 +85,6 @@ class BrandingService
 
             case 'admin_panel':
             default:
-                // No painel administrativo da loja, usamos a marca da plataforma no chrome
-                // mas podemos disponibilizar dados da loja para contextuais
                 return [
                     'logo' => $platform['plataforma_logo'],
                     'favicon' => $platform['plataforma_favicon'],

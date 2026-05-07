@@ -36,31 +36,25 @@ class CatalogoController extends Controller
             ->get();
     }
 
-    public function inicio(Request $request): mixed
-    {
-        $tenantContext = app(\App\Services\SaaS\TenantContext::class);
-        $host = $request->getHost();
-        $baseHost = parse_url(config('app.url'), PHP_URL_HOST);
+public function inicio(Request $request): mixed
+{
+    $tenantContext = app(\App\Services\SaaS\TenantContext::class);
+    $host = $request->getHost();
+    $baseHost = parse_url(config('app.url'), PHP_URL_HOST);
 
-        // PRIORIDADE 1: Se há tenant no contexto (detectado pelo middleware via ?loja=, sessão ou subdomínio),
-        // mostramos o catálogo da loja, mesmo que o host seja o domínio principal.
-        if ($tenantContext->hasTenant()) {
-            return $this->catalogo($request);
-        }
-
-        // PRIORIDADE 2: Se não há tenant e estamos no domínio principal, mostramos a Landing Page da PLATAFORMA.
-        if ($host === $baseHost || $host === 'localhost' || $host === '127.0.0.1') {
-            return $this->renderLandingPlataforma($request);
-        }
-
-        // Se estivermos em um subdomínio ou domínio personalizado, mostramos o catálogo da loja.
-        if ($tenantContext->hasTenant()) {
-            return $this->catalogo($request);
-        }
-
-        // Fallback: Landing Page da PLATAFORMA
+    // No domínio principal da plataforma, a raiz "/" deve sempre abrir a landing institucional.
+    if ($host === $baseHost || $host === 'localhost' || $host === '127.0.0.1') {
         return $this->renderLandingPlataforma($request);
     }
+
+    // Em subdomínios/domínios personalizados com tenant resolvido, abre o catálogo da loja.
+    if ($tenantContext->hasTenant()) {
+        return $this->catalogo($request);
+    }
+
+    // Fallback seguro: landing da plataforma.
+    return $this->renderLandingPlataforma($request);
+}
 
     /**
      * Renderiza a Landing Page institucional da Plataforma VaptCRM.
@@ -80,11 +74,13 @@ class CatalogoController extends Controller
             ->publicVisible()
             ->get();
 
-        return view('publico.landing-vapt', [
-            'banners'     => $banners,
-            'depoimentos' => $depoimentos,
-            'planos'      => $planos
-        ]);
+return view('publico.landing-vapt', [
+    'banners'     => $banners,
+    'depoimentos' => $depoimentos,
+    'planos'      => $planos,
+    'branding'    => app(\App\Services\Branding\BrandingService::class)->resolve('public_page'),
+    'configSite'  => [],
+]);
     }
 
     public function catalogo(Request $request): View

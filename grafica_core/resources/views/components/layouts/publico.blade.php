@@ -28,11 +28,14 @@ Data: 2026-04-22 02:15 -03:00
     <title>{{ $titulo ?? ($nomeEmpresa . ' - Catálogo Online') }}</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
-    @if(!empty($branding['favicon']))
-        <link rel="icon" type="image/png" href="{{ asset('storage/' . $branding['favicon']) }}">
-    @else
-        <link rel="icon" type="image/png" href="{{ asset('img/favicon.png') }}">
-    @endif
+  @php
+    $faviconHref = !empty($branding['favicon'])
+        ? asset('storage/' . $branding['favicon']) . '?v=' . urlencode($branding['favicon'])
+        : asset('img/favicon.png') . '?v=1';
+@endphp
+
+<link rel="icon" type="image/png" href="{{ $faviconHref }}">
+<link rel="shortcut icon" type="image/png" href="{{ $faviconHref }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     
@@ -55,11 +58,13 @@ Data: 2026-04-22 02:15 -03:00
     <header class="sticky top-0 z-50 backdrop-blur-md {{ $showSaasHeader ? 'bg-white border-b border-slate-200 shadow-sm' : 'bg-brand-secondary/95 border-b-4 border-brand-primary text-white shadow-xl' }}">
         <div class="public-header-wrap mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
             <a href="{{ \App\Support\PublicUrlHelper::inicio() }}" class="flex items-center gap-3 group">
-                @if(!empty($branding['logo']))
-                    <img src="{{ asset('storage/' . $branding['logo']) }}" class="h-8 w-auto group-hover:scale-105 transition-transform duration-300 drop-shadow-md sm:h-10" alt="{{ $nomeEmpresa }}">
-                @else
-                    <img src="{{ asset('img/logo_horizontal.png') }}" class="h-8 w-auto group-hover:scale-105 transition-transform duration-300 drop-shadow-md sm:h-10" alt="{{ $nomeEmpresa }}">
-                @endif
+               @if($showSaasHeader)
+    <img src="{{ asset('img/logo_horizontal.png') }}" class="h-8 w-auto group-hover:scale-105 transition-transform duration-300 drop-shadow-md sm:h-10" alt="VaptCRM">
+@elseif(!empty($branding['logo']))
+    <img src="{{ asset('storage/' . $branding['logo']) }}" class="h-8 w-auto group-hover:scale-105 transition-transform duration-300 drop-shadow-md sm:h-10" alt="{{ $nomeEmpresa }}">
+@else
+    <img src="{{ asset('img/logo_horizontal.png') }}" class="h-8 w-auto group-hover:scale-105 transition-transform duration-300 drop-shadow-md sm:h-10" alt="{{ $nomeEmpresa }}">
+@endif
             </a>
 
             <nav class="flex items-center gap-2 sm:gap-4 md:gap-6">

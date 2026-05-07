@@ -122,18 +122,19 @@ class AppServiceProvider extends ServiceProvider
                     $context = 'admin_panel';
                     
                     if (str_starts_with($path, 'super-admin')) {
-                        $context = 'master';
-                    } elseif (
-                        $path === '/' ||
-                        str_starts_with($path, 'catalogo') ||
-                        str_starts_with($path, 'produto') ||
-                        str_starts_with($path, 'carrinho') ||
-                        str_starts_with($path, 'checkout') ||
-                        str_starts_with($path, 'acompanhar-pedido') ||
-                        str_starts_with($path, 'p/')
-                    ) {
-                        $context = 'catalog';
-                    }
+    $context = 'master';
+} elseif ($path === '/') {
+    $context = 'public_page';
+} elseif (
+    str_starts_with($path, 'catalogo') ||
+    str_starts_with($path, 'produto') ||
+    str_starts_with($path, 'carrinho') ||
+    str_starts_with($path, 'checkout') ||
+    str_starts_with($path, 'acompanhar-pedido') ||
+    str_starts_with($path, 'p/')
+) {
+    $context = 'catalog';
+}
 
                     $branding = $brandingService->resolve($context, $lojaId);
                     $configPlataforma = $brandingService->getPlatformBranding();
